@@ -284,7 +284,7 @@ export default function DashboardPage() {
         const payDay = new Date(dateStr + "T00:00:00");
         payDay.setDate(payDay.getDate() + 1);
         const payLabel = `${payDay.getMonth() + 1}월 ${payDay.getDate()}일`;
-        showToast(`${DAY_SHORT[jsDay]}요일 연장 근무 등록! ${payLabel} 포인트가 지급돼요.`);
+        showToast(`${DAY_SHORT[jsDay]}요일 연장 근무 등록! 근무한 다음 날에 포인트가 지급돼요.`);
         refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
