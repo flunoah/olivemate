@@ -49,14 +49,14 @@ export default function SignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/signup", {
+      const res = await fetch("https://olivemate-api.onrender.com/api/v1/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginId, password, name }),
       });
       if (!res.ok) { setError("이미 사용 중인 사번입니다."); return; }
 
-      const loginRes = await fetch("http://localhost:8080/api/v1/auth/login", {
+      const loginRes = await fetch("https://olivemate-api.onrender.com/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginId, password }),
@@ -80,7 +80,7 @@ export default function SignUpPage() {
     try {
       if (initPoint && Number(initPoint) > 0) {
         const res = await fetch(
-          `http://localhost:8080/api/v1/points/initialize/${crewId}`,
+          `https://olivemate-api.onrender.com/api/v1/points/initialize/${crewId}`,
           {
             method: "POST",
             headers: {
@@ -108,7 +108,7 @@ export default function SignUpPage() {
     setLoading(true);
     setError("");
     try {
-      await fetch("http://localhost:8080/api/v1/schedule", {
+      await fetch("https://olivemate-api.onrender.com/api/v1/schedule", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
