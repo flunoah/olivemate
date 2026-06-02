@@ -281,7 +281,10 @@ export default function DashboardPage() {
         body: JSON.stringify({ crewId, workDate: dateStr, type: "EXTRA" }),
       });
       if (res.ok) {
-        showToast(`${DAY_SHORT[jsDay]}요일 연장 근무 등록! 내일 포인트가 지급돼요.`);
+        const payDay = new Date(dateStr + "T00:00:00");
+        payDay.setDate(payDay.getDate() + 1);
+        const payLabel = `${payDay.getMonth() + 1}월 ${payDay.getDate()}일`;
+        showToast(`${DAY_SHORT[jsDay]}요일 연장 근무 등록! ${payLabel} 포인트가 지급돼요.`);
         refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
@@ -644,7 +647,7 @@ export default function DashboardPage() {
 
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       {!isPast && scheduled && (
-                        <button onClick={() => handleMarkAbsent(dateStr, jsDay)} disabled={loading} style={btnS("red")}>결근·조퇴</button>
+                        <button onClick={() => handleMarkAbsent(dateStr, jsDay)} disabled={loading} style={btnS("red")}>결근</button>
                       )}
                       {!isPast && !scheduled && registered && (
                         <button onClick={() => handleCancel(dateStr, jsDay)} disabled={loading} style={btnS("gray")}>삭제</button>

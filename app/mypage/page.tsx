@@ -28,6 +28,7 @@ export default function MyPage() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");
   const [loading, setLoading] = useState(false);
+  const [confirmStep, setConfirmStep] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -57,9 +58,14 @@ export default function MyPage() {
   const toggleDay = (day: number) =>
     setSelectedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
 
-  const handleSave = async () => {
+  const handleRequestSave = () => {
     if (selectedDays.length === 0) { setMessage("근무 요일을 선택해주세요."); setMessageType("error"); return; }
     if (!startDate) { setMessage("적용 시작일을 선택해주세요."); setMessageType("error"); return; }
+    setMessage("");
+    setConfirmStep(true);
+  };
+
+  const handleSave = async () => {
     setLoading(true); setMessage("");
     const token = localStorage.getItem("token") || "";
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -74,6 +80,7 @@ export default function MyPage() {
         setMessage("근무 요일이 저장됐어요!");
         setMessageType("success");
         setCurrentSchedule({ daysOfWeek: selectedDays, startDate });
+        setConfirmStep(false);
         setShowChangeForm(false);
       } else {
         const status = res.status;
@@ -82,8 +89,9 @@ export default function MyPage() {
         else if (status >= 500) setMessage("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요");
         else setMessage("저장에 실패했습니다.");
         setMessageType("error");
+        setConfirmStep(false);
       }
-    } catch { setMessage("서버 연결에 실패했습니다."); setMessageType("error"); }
+    } catch { setMessage("서버 연결에 실패했습니다."); setMessageType("error"); setConfirmStep(false); }
     finally { setLoading(false); }
   };
 
@@ -167,18 +175,44 @@ export default function MyPage() {
               style={{ width: "100%", border: "0.5px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
             />
 
-            {message && (
+            {message && !confirmStep && (
               <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, fontSize: 13, background: messageType === "success" ? "#F0FAF4" : "#FFF0F0", color: messageType === "success" ? "#1B9E5B" : "#E53935" }}>
                 {message}
               </div>
             )}
 
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: "#1B9E5B", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: loading ? 0.5 : 1 }}>
-              {loading ? "저장 중..." : "저장하기"}
-            </button>
+            {confirmStep ? (
+              <div style={{ background: "#F0FFF4", borderRadius: 10, padding: "14px", marginBottom: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", marginBottom: 8 }}>다음과 같이 변경할까요?</p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                  {sortedDays(selectedDays).map(day => (
+                    <span key={day} style={{ padding: "4px 10px", borderRadius: 20, background: "#1B9E5B", color: "#fff", fontSize: 13, fontWeight: 600 }}>
+                      {["일", "월", "화", "수", "목", "금", "토"][day]}
+                    </span>
+                  ))}
+                </div>
+                <p style={{ fontSize: 12, color: "#555", marginBottom: 14 }}>{startDate}부터 적용</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setConfirmStep(false)}
+                    style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: "#f0f0f0", color: "#555", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={loading}
+                    style={{ flex: 1, padding: "11px 0", borderRadius: 8, background: "#1B9E5B", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer", opacity: loading ? 0.5 : 1 }}>
+                    {loading ? "저장 중..." : "확인"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleRequestSave}
+                style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: "#1B9E5B", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                저장하기
+              </button>
+            )}
           </div>
         )}
 
