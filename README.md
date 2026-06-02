@@ -1,36 +1,18 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 서비스 구현 목표
+[Primary]
+- 유저는 최초 입사날 등록이 아닌 중도사용임, 기존 보유 포인트는 입력할 수 있어야 함.
+- 네비게이션 필요
+마이페이지: 근무 요일은 최초 설정 할 수 있게 구현 (주소정 요일 입력 + 적용 날짜)
+-> 나의 근무요일을 매주 등록하고 싶지 않음.
+(연장 추가) / (결근·조퇴 제외)
+-> 결근 시 없어야하는 경우에만 수정할 수 있게 로직 재구현. / 4시간 안채우고 조퇴 시 수정할 수 있게 로직 재구현.
 
-## Getting Started
+[Normal]
+- 포인트 사용 탭을 사용하는 포인트 + 상품명 입력 가능하게 구현(O)
+- 포인트 내역이 보이는 뷰는 달력처럼 보이게 구현(O)
 
-First, run the development server:
+- 사용한 포인트 만회할 수 있게 구현하기
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 추후 올리브영 본사에게 제품 큐레이션을 플랫폼 내에 탑재
+- 올번올쓴(올리브영에서 번 돈 올리브영에서 쓰자)
+- 크루 포커스, 크루 초이스
