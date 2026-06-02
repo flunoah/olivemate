@@ -66,6 +66,7 @@ export default function SignUpPage() {
       setCrewId(payload.sub);
       setToken(data.accessToken);
       localStorage.setItem("token", data.accessToken);
+      document.cookie = `token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
       setStep(2);
     } catch {
       setError("서버 연결에 실패했습니다.");

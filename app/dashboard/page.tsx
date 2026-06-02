@@ -188,10 +188,22 @@ export default function DashboardPage() {
 
     const t = localStorage.getItem("token");
     if (!t) { router.push("/"); return; }
-    const payload = JSON.parse(atob(t.split(".")[1]));
-    const id = payload.sub;
-    setCrewId(id);
-    fetchAll(id, t);
+    try {
+      const payload = JSON.parse(atob(t.split(".")[1]));
+      if (payload.exp * 1000 < Date.now()) {
+        localStorage.clear();
+        document.cookie = "token=; path=/; max-age=0";
+        router.push("/");
+        return;
+      }
+      const id = payload.sub;
+      setCrewId(id);
+      fetchAll(id, t);
+    } catch {
+      localStorage.clear();
+      document.cookie = "token=; path=/; max-age=0";
+      router.push("/");
+    }
   }, []);
 
   // 모바일 홈 화면 추가 배너
@@ -473,7 +485,7 @@ export default function DashboardPage() {
         {/* 헤더 */}
         <div style={{ background: "#1B9E5B", color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>🫒 MATE 포인트</div>
-          <button onClick={() => { localStorage.removeItem("token"); router.push("/"); }}
+          <button onClick={() => { localStorage.clear(); document.cookie = "token=; path=/; max-age=0"; router.push("/"); }}
             style={{ fontSize: 13, opacity: 0.85, background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
             로그아웃
           </button>

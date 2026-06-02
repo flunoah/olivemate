@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -9,6 +9,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    if (!t) return;
+    try {
+      const payload = JSON.parse(atob(t.split(".")[1]));
+      if (payload.exp * 1000 > Date.now()) {
+        router.replace("/dashboard");
+      } else {
+        localStorage.clear();
+        document.cookie = "token=; path=/; max-age=0";
+      }
+    } catch {
+      localStorage.clear();
+      document.cookie = "token=; path=/; max-age=0";
+    }
+  }, []);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -30,6 +47,7 @@ export default function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem("token", data.accessToken);
+      document.cookie = `token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
       router.push("/dashboard");
     } catch {
       setError("서버 연결에 실패했습니다.");
