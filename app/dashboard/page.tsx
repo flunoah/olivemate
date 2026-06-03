@@ -45,14 +45,15 @@ const serverDayToJsDay = (d: number): number => (d === 7 ? 0 : d);
 // Returns Mon~Sun dates for this week as { dateStr, jsDay } pairs
 function getThisWeekDateStrings(todayStr: string): { dateStr: string; jsDay: number }[] {
   if (!todayStr) return [];
-  const today = new Date(todayStr + "T00:00:00");
-  const dow = today.getDay();
+  const [y, m, d] = todayStr.split("-").map(Number);
+  const today = new Date(Date.UTC(y, m - 1, d));
+  const dow = today.getUTCDay();
   const monday = new Date(today);
-  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  monday.setUTCDate(today.getUTCDate() - (dow === 0 ? 6 : dow - 1));
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return { dateStr: d.toISOString().slice(0, 10), jsDay: d.getDay() };
+    const date = new Date(monday);
+    date.setUTCDate(monday.getUTCDate() + i);
+    return { dateStr: date.toISOString().slice(0, 10), jsDay: date.getUTCDay() };
   });
 }
 
@@ -184,7 +185,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const now = new Date();
-    setTodayStr(now.toISOString().slice(0, 10));
+    const koreaOffset = 9 * 60 * 60 * 1000;
+    const koreaTime = new Date(now.getTime() + koreaOffset);
+    setTodayStr(koreaTime.toISOString().slice(0, 10));
 
     const t = localStorage.getItem("token");
     if (!t) { router.push("/"); return; }
