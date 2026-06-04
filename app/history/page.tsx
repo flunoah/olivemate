@@ -71,7 +71,7 @@ export default function HistoryPage() {
 
   const fetchHistory = (id: string, t: string) => {
     fetch(`/api/v1/points/history/${id}`, {
-      headers: { Authorization: `Bearer ${t}` },
+      headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
     })
       .then(async res => {
         if (res.status === 401) { router.push("/"); return []; }
@@ -103,7 +103,7 @@ export default function HistoryPage() {
     try {
       const res = await fetch("/api/v1/points/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
         body: JSON.stringify({ ledgerId: cancelTarget.ledgerId, crewId }),
       });
       if (res.ok) {

@@ -38,7 +38,7 @@ export default function MyPage() {
     const crewId = payload.sub;
 
     fetch(`/api/v1/schedule/me/${crewId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
     })
       .then(async res => {
         if (!res.ok) return null;
@@ -73,7 +73,7 @@ export default function MyPage() {
     try {
       const res = await fetch("/api/v1/schedule", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
         body: JSON.stringify({ crewId, daysOfWeek: selectedDays, startDate }),
       });
       if (res.ok) {

@@ -87,6 +87,7 @@ export default function SignUpPage() {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
+              'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key',
             },
             body: JSON.stringify({ amount: Number(initPoint) }),
           }
@@ -114,6 +115,7 @@ export default function SignUpPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key',
         },
         body: JSON.stringify({
           crewId,

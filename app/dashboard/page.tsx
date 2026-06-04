@@ -144,10 +144,11 @@ export default function DashboardPage() {
 
   const fetchAll = async (id: string, t: string) => {
     try {
+      const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
       const [balRes, schRes, wdRes] = await Promise.all([
-        fetch(`/api/v1/points/balance/${id}`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`/api/v1/schedule/me/${id}`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`/api/v1/attendance/week/${id}`, { headers: { Authorization: `Bearer ${t}` } }),
+        fetch(`/api/v1/points/balance/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
+        fetch(`/api/v1/schedule/me/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
+        fetch(`/api/v1/attendance/week/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
       ]);
       if (balRes.status === 401) { router.push("/"); return; }
       if (balRes.ok) {
@@ -280,7 +281,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/attendance/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
         body: JSON.stringify({ crewId, workDate: dateStr, type: "EXTRA" }),
       });
       if (res.ok) {
@@ -301,7 +302,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(
         `/api/v1/attendance/cancel?crewId=${crewId}&workDate=${dateStr}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${tok()}` } }
+        { method: "DELETE", headers: { Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' } }
       );
       if (res.ok) {
         showToast(`${DAY_SHORT[jsDay]}요일 근무 취소됐어요.`);
@@ -318,7 +319,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/attendance/absent", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
         body: JSON.stringify({ crewId, workDate: dateStr }),
       });
       if (res.ok) {
@@ -338,7 +339,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/v1/points/use/${crewId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
         body: JSON.stringify({
           amount: Number(useAmount),
           description: productName || "포인트 사용",
@@ -381,7 +382,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/points/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
         body: JSON.stringify({ ledgerId: target.ledgerId, crewId }),
       });
       if (res.ok) {

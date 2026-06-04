@@ -9,8 +9,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [stayLoggedIn, setStayLoggedIn] = useState(false);
 
   useEffect(() => {
+    const stay = localStorage.getItem("stayLoggedIn") === "true";
+    setStayLoggedIn(stay);
     const t = localStorage.getItem("token");
     if (!t) return;
     try {
@@ -46,8 +49,10 @@ export default function LoginPage() {
       }
 
       const data = await res.json();
+      const maxAge = stayLoggedIn ? 30 * 24 * 60 * 60 : 86400;
       localStorage.setItem("token", data.accessToken);
-      document.cookie = `token=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+      localStorage.setItem("stayLoggedIn", stayLoggedIn ? "true" : "false");
+      document.cookie = `token=${data.accessToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
       router.push("/dashboard");
     } catch {
       setError("서버 연결에 실패했습니다.");
@@ -89,6 +94,18 @@ export default function LoginPage() {
               className="mt-1 w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div
+              onClick={() => setStayLoggedIn(v => !v)}
+              className={`relative w-10 h-6 rounded-full transition-colors ${stayLoggedIn ? "bg-green-600" : "bg-gray-300"}`}
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${stayLoggedIn ? "translate-x-4" : "translate-x-0"}`}
+              />
+            </div>
+            <span className="text-sm text-gray-600">로그인 유지</span>
+          </label>
 
           {error && (
             <p className="text-red-500 text-sm">{error}</p>
