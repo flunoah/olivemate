@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TopProgressBar } from "../components/TopProgressBar";
 
 interface Ledger {
   id?: string | number;
@@ -68,8 +69,10 @@ export default function HistoryPage() {
   const [cancelTarget, setCancelTarget] = useState<CancelTarget | null>(null);
   const [cancelError, setCancelError] = useState("");
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const fetchHistory = (id: string, t: string) => {
+    setLoading(true);
     fetch(`/api/v1/points/history/${id}`, {
       headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
     })
@@ -79,7 +82,8 @@ export default function HistoryPage() {
         return res.json();
       })
       .then(data => setLedgers(Array.isArray(data) ? data : []))
-      .catch(() => setLedgers([]));
+      .catch(() => setLedgers([]))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -183,6 +187,7 @@ export default function HistoryPage() {
 
   return (
     <>
+      <TopProgressBar loading={loading || cancelLoading} />
       {cancelTarget && (
         <CancelModal
           target={cancelTarget}

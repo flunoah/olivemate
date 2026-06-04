@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TopProgressBar } from "../components/TopProgressBar";
 
 interface Balance {
   balance: number;
@@ -122,6 +123,7 @@ export default function DashboardPage() {
   const [productName, setProductName] = useState("");
   const [pointError, setPointError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [todayStr, setTodayStr] = useState("");
@@ -202,7 +204,7 @@ export default function DashboardPage() {
       }
       const id = payload.sub;
       setCrewId(id);
-      fetchAll(id, t);
+      fetchAll(id, t).finally(() => setPageLoading(false));
     } catch {
       localStorage.clear();
       document.cookie = "token=; path=/; max-age=0";
@@ -410,6 +412,7 @@ export default function DashboardPage() {
 
   return (
     <>
+      <TopProgressBar loading={pageLoading || loading} />
       <Toast message={toast} type={toastType} onClose={() => setToast("")} />
 
       {showExtraModal && (

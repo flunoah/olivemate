@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TopProgressBar } from "../components/TopProgressBar";
 
 const DAYS = [
   { label: "일", value: 0 },
@@ -28,6 +29,7 @@ export default function MyPage() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [confirmStep, setConfirmStep] = useState(false);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export default function MyPage() {
     setName(payload.name || "크루");
     const crewId = payload.sub;
 
+    setPageLoading(true);
     fetch(`/api/v1/schedule/me/${crewId}`, {
       headers: { Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
     })
@@ -52,7 +55,8 @@ export default function MyPage() {
           setStartDate(data.startDate || "");
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setPageLoading(false));
   }, []);
 
   const toggleDay = (day: number) =>
@@ -101,6 +105,8 @@ export default function MyPage() {
   const initial = name.slice(0, 1);
 
   return (
+    <>
+    <TopProgressBar loading={pageLoading || loading} />
     <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
       <div style={{ background: "#1B9E5B", color: "#fff", padding: "16px 24px" }}>
         <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>마이페이지</h1>
@@ -232,5 +238,6 @@ export default function MyPage() {
 
       </div>
     </div>
+    </>
   );
 }

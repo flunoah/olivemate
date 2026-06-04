@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TopProgressBar } from "./components/TopProgressBar";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,6 +63,8 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+    <TopProgressBar loading={loading} />
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm">
 
@@ -129,5 +132,6 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }

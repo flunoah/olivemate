@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { TopProgressBar } from "../components/TopProgressBar";
 
 interface Crew {
   crewId: string;
@@ -245,6 +246,7 @@ export default function AdminPage() {
 
   return (
     <>
+      <TopProgressBar loading={wdLoading || actLoading || grantLoading || regLoading} />
       {/* Toast */}
       {toast.msg && (
         <div style={{
