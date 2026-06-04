@@ -8,9 +8,9 @@ interface Balance {
   balance: number;
   monthlyEarned: number;
   monthlyUsed: number;
-  expiringAmount: number;
-  expiringDate: string | null;
   expiringIn7Days: number;
+  expiringIn30Days: number;
+  monthlyExpiring: number;
 }
 
 interface PendingUndo {
@@ -115,7 +115,7 @@ export default function DashboardPage() {
   const [crewId, setCrewId] = useState("");
   const [balance, setBalance] = useState<Balance>({
     balance: 0, monthlyEarned: 0, monthlyUsed: 0,
-    expiringAmount: 0, expiringDate: null, expiringIn7Days: 0,
+    expiringIn7Days: 0, expiringIn30Days: 0, monthlyExpiring: 0,
   });
   const [scheduleDays, setScheduleDays] = useState<number[]>([]);
   const [registeredDates, setRegisteredDates] = useState<string[]>([]);
@@ -159,9 +159,9 @@ export default function DashboardPage() {
           balance: data.balance ?? 0,
           monthlyEarned: data.monthlyEarned ?? 0,
           monthlyUsed: data.monthlyUsed ?? 0,
-          expiringAmount: data.expiringAmount ?? 0,
-          expiringDate: data.expiringDate ?? null,
           expiringIn7Days: data.expiringIn7Days ?? 0,
+          expiringIn30Days: data.expiringIn30Days ?? 0,
+          monthlyExpiring: data.monthlyExpiring ?? 0,
         });
       }
       if (schRes.ok) {
@@ -509,11 +509,11 @@ export default function DashboardPage() {
             <p style={{ fontSize: 26, fontWeight: 700, color: "#1B9E5B", marginBottom: 12 }}>
               {balance.balance.toLocaleString()}P
             </p>
-            {balance.expiringDate && balance.expiringAmount > 0 && (
+            {balance.expiringIn7Days > 0 && (
               <div style={{ background: "#FFF3E0", borderRadius: 8, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <span>⚠️</span>
                 <span style={{ fontSize: 13, color: "#E65100", fontWeight: 500 }}>
-                  {balance.expiringAmount.toLocaleString()}P가 {new Date(balance.expiringDate).getMonth() + 1}월 {new Date(balance.expiringDate).getDate()}일 소멸 예정이에요
+                  {balance.expiringIn7Days.toLocaleString()}P가 7일 이내 소멸 예정이에요
                 </span>
               </div>
             )}
@@ -528,7 +528,7 @@ export default function DashboardPage() {
               </div>
               <div style={{ background: "#FFF8E1", borderRadius: 8, padding: "10px 8px", textAlign: "center" }}>
                 <p style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>소멸 예정</p>
-                <p style={{ fontSize: 14, fontWeight: 700, color: "#E65100" }}>{balance.expiringAmount.toLocaleString()}P</p>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "#E65100" }}>{balance.monthlyExpiring.toLocaleString()}P</p>
               </div>
             </div>
           </div>
