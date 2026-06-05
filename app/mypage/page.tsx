@@ -31,6 +31,9 @@ export default function MyPage() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [confirmStep, setConfirmStep] = useState(false);
+  const [bugType, setBugType] = useState("");
+  const [bugDesc, setBugDesc] = useState("");
+  const [bugSubmitted, setBugSubmitted] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -228,6 +231,56 @@ export default function MyPage() {
             {message}
           </div>
         )}
+
+        {/* 버그 제보 */}
+        <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 12 }}>🐛 버그 제보하기</p>
+          {bugSubmitted ? (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#1B9E5B", margin: 0 }}>제보해주셔서 감사해요!</p>
+              <p style={{ fontSize: 12, color: "#888", marginTop: 4 }}>빠르게 확인하고 수정할게요.</p>
+              <button
+                onClick={() => { setBugSubmitted(false); setBugType(""); setBugDesc(""); }}
+                style={{ marginTop: 12, fontSize: 12, color: "#888", background: "none", border: "none", cursor: "pointer" }}>
+                다시 제보하기
+              </button>
+            </div>
+          ) : (
+            <>
+              <p style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>버그 유형</p>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                {["UI 문제", "기능 오류", "포인트 오류", "기타"].map(type => (
+                  <button key={type} onClick={() => setBugType(type)} style={{
+                    padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                    background: bugType === type ? "#1B9E5B" : "#f5f5f5",
+                    color: bugType === type ? "#fff" : "#555",
+                    border: bugType === type ? "none" : "0.5px solid #e0e0e0",
+                  }}>{type}</button>
+                ))}
+              </div>
+              <textarea
+                value={bugDesc}
+                onChange={e => setBugDesc(e.target.value)}
+                placeholder="어떤 문제가 발생했는지 알려주세요."
+                rows={4}
+                style={{ width: "100%", border: "0.5px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", boxSizing: "border-box", resize: "none", fontFamily: "inherit" }}
+              />
+              <button
+                onClick={() => {
+                  if (!bugDesc.trim()) return;
+                  const subject = encodeURIComponent(`[MATE 버그 제보] ${bugType || "기타"}`);
+                  const body = encodeURIComponent(`크루: ${name}\n유형: ${bugType || "기타"}\n\n내용:\n${bugDesc}`);
+                  window.open(`mailto:dragonusuny@naver.com?subject=${subject}&body=${body}`);
+                  setBugSubmitted(true);
+                }}
+                disabled={!bugDesc.trim()}
+                style={{ width: "100%", marginTop: 10, padding: "12px 0", borderRadius: 8, background: "#1B9E5B", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: bugDesc.trim() ? "pointer" : "default", opacity: bugDesc.trim() ? 1 : 0.4 }}>
+                제보하기
+              </button>
+            </>
+          )}
+        </div>
 
         {/* 로그아웃 */}
         <button
