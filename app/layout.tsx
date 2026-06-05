@@ -13,6 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        <meta name="color-scheme" content="light" />
+      </head>
       <body className="bg-gray-50 max-w-md mx-auto min-h-screen relative pb-20">
         {children}
         <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-100 flex z-50">
