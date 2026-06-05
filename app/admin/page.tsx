@@ -44,6 +44,7 @@ export default function AdminPage() {
   const [monthDate, setMonthDate] = useState(new Date());
 
   const [ledgers, setLedgers] = useState<Ledger[]>([]);
+  const [balance, setBalance] = useState<number | null>(null);
 
   const [actLoading, setActLoading] = useState(false);
 
@@ -62,6 +63,7 @@ export default function AdminPage() {
   const [showDelete, setShowDelete] = useState(false);
 
   const [toast, setToast] = useState({ msg: "", type: "success" as "success" | "error" });
+  const [isMobile, setIsMobile] = useState(false);
 
   const tok = () => localStorage.getItem("adminToken") || "";
 
@@ -104,11 +106,27 @@ export default function AdminPage() {
 
   const fetchHistory = async (crewId: string) => {
     try {
-      const res = await fetch(`/api/v1/points/history/${crewId}`, { headers: ah() });
-      if (res.ok) setLedgers(await res.json());
+      const [histRes, balRes] = await Promise.all([
+        fetch(`/api/v1/points/history/${crewId}`, { headers: ah() }),
+        fetch(`/api/v1/points/balance/${crewId}`, { headers: ah() }),
+      ]);
+      if (histRes.ok) setLedgers(await histRes.json());
       else setLedgers([]);
-    } catch { setLedgers([]); }
+      if (balRes.ok) {
+        const d = await balRes.json();
+        setBalance(d.balance ?? 0);
+      } else {
+        setBalance(null);
+      }
+    } catch { setLedgers([]); setBalance(null); }
   };
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const t = localStorage.getItem("adminToken");
@@ -127,6 +145,7 @@ export default function AdminPage() {
     setTab("workdays");
     setWorkdays([]);
     setLedgers([]);
+    setBalance(null);
     setMonthDate(new Date());
   };
 
@@ -321,8 +340,19 @@ export default function AdminPage() {
 
       <div style={{ height: "100%", minHeight: "100vh", background: "#f5f5f5", display: "flex", flexDirection: "column" }}>
         {/* Header */}
-        <div style={{ background: "#1B9E5B", color: "#fff", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>🫒 MATE Admin</div>
+        <div style={{ background: "#1B9E5B", color: "#fff", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isMobile && selected && (
+              <button
+                onClick={() => setSelected(null)}
+                style={{ background: "none", border: "none", color: "#fff", fontSize: 20, cursor: "pointer", padding: "0 4px 0 0", lineHeight: 1 }}>
+                ‹
+              </button>
+            )}
+            <div style={{ fontSize: 17, fontWeight: 700 }}>
+              {isMobile && selected ? selected.name : "🫒 MATE Admin"}
+            </div>
+          </div>
           <button
             onClick={() => {
               localStorage.removeItem("adminToken");
@@ -337,8 +367,9 @@ export default function AdminPage() {
         {/* Body: sidebar + content */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-          {/* Sidebar */}
-          <div style={{ width: 240, background: "#fff", borderRight: "0.5px solid #e0e0e0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          {/* Sidebar — 모바일에서 크루 선택 시 숨김 */}
+          {(!isMobile || !selected) && (
+          <div style={{ width: isMobile ? "100%" : 240, background: "#fff", borderRight: isMobile ? "none" : "0.5px solid #e0e0e0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
             <div style={{ padding: "12px 12px 8px" }}>
               <button
                 onClick={() => setShowReg(true)}
@@ -362,33 +393,37 @@ export default function AdminPage() {
                   key={c.crewId}
                   onClick={() => selectCrew(c)}
                   style={{
-                    width: "100%", padding: "10px 12px", borderRadius: 8, border: "none",
+                    width: "100%", padding: "12px 14px", borderRadius: 8, border: "none",
                     background: selected?.crewId === c.crewId ? "#E8F5E9" : "transparent",
                     textAlign: "left", cursor: "pointer", marginBottom: 2,
                   }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: selected?.crewId === c.crewId ? "#1B9E5B" : "#1a1a1a" }}>{c.name}</div>
-                  <div style={{ fontSize: 11, color: "#aaa", marginTop: 1 }}>{c.loginId}</div>
+                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{c.loginId}</div>
                 </button>
               ))}
             </div>
           </div>
+          )}
 
-          {/* Content */}
-          <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
+          {/* Content — 모바일에서 크루 미선택 시 숨김 */}
+          {(!isMobile || selected) && (
+          <div style={{ flex: 1, overflow: "auto", padding: isMobile ? 12 : 20 }}>
             {!selected ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#bbb", fontSize: 14 }}>
                 왼쪽에서 크루를 선택하세요
               </div>
             ) : (
-              <div style={{ maxWidth: 680 }}>
-                <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px" }}>{selected.name}</p>
+              <div style={{ maxWidth: isMobile ? "100%" : 680 }}>
+                {!isMobile && <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px" }}>{selected.name}</p>}
 
-                {/* Tab bar */}
-                <div style={{ display: "flex", gap: 2, background: "#f0f0f0", borderRadius: 10, padding: 4, marginBottom: 16, width: "fit-content" }}>
-                  {tabBtn("workdays", "근무 관리")}
-                  {tabBtn("history", "포인트 내역")}
-                  {tabBtn("grant", "포인트 적립")}
-                  {tabBtn("info", "회원 정보")}
+                {/* Tab bar — 모바일에서 가로 스크롤 */}
+                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" as "touch", marginBottom: 12 }}>
+                  <div style={{ display: "flex", gap: 2, background: "#f0f0f0", borderRadius: 10, padding: 4, width: "fit-content", minWidth: "100%" }}>
+                    {tabBtn("workdays", "근무 관리")}
+                    {tabBtn("history", "포인트 내역")}
+                    {tabBtn("grant", "포인트 적립")}
+                    {tabBtn("info", "회원 정보")}
+                  </div>
                 </div>
 
                 {/* ── 근무 관리 ── */}
@@ -445,6 +480,13 @@ export default function AdminPage() {
 
                 {/* ── 포인트 내역 ── */}
                 {tab === "history" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {balance !== null && (
+                      <div style={{ background: "#F0FAF4", borderRadius: 10, border: "0.5px solid #A5D6A7", padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>현재 보유 포인트</span>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: "#1B9E5B" }}>{balance.toLocaleString()}P</span>
+                      </div>
+                    )}
                   <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
                     {ledgers.length === 0 ? (
                       <p style={{ textAlign: "center", color: "#aaa", padding: "24px 0", fontSize: 13 }}>내역 없음</p>
@@ -467,6 +509,7 @@ export default function AdminPage() {
                         })}
                       </div>
                     )}
+                  </div>
                   </div>
                 )}
 
@@ -536,6 +579,7 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </>
