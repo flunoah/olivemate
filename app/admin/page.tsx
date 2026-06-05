@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
 
+interface Bug {
+  id: number;
+  crewName: string;
+  type: string;
+  description: string;
+  createdAt: string;
+  resolved: boolean;
+}
+
 interface Crew {
   crewId: string;
   name: string;
@@ -64,6 +73,9 @@ export default function AdminPage() {
 
   const [toast, setToast] = useState({ msg: "", type: "success" as "success" | "error" });
   const [isMobile, setIsMobile] = useState(false);
+  const [adminView, setAdminView] = useState<"crews" | "bugs">("crews");
+  const [bugs, setBugs] = useState<Bug[]>([]);
+  const [bugFilter, setBugFilter] = useState<"all" | "open" | "resolved">("open");
 
   const tok = () => localStorage.getItem("adminToken") || "";
 
@@ -104,6 +116,23 @@ export default function AdminPage() {
     finally { setWdLoading(false); }
   };
 
+  const fetchBugs = async () => {
+    try {
+      const res = await fetch("/api/bugs");
+      if (res.ok) setBugs(await res.json());
+    } catch {}
+  };
+
+  const toggleResolved = async (bug: Bug) => {
+    const updated = { ...bug, resolved: !bug.resolved };
+    setBugs(prev => prev.map(b => b.id === bug.id ? updated : b));
+    await fetch("/api/bugs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: bug.id, resolved: updated.resolved }),
+    }).catch(() => {});
+  };
+
   const fetchHistory = async (crewId: string) => {
     try {
       const [histRes, balRes] = await Promise.all([
@@ -139,6 +168,10 @@ export default function AdminPage() {
     if (tab === "workdays") fetchWorkdays(selected.crewId, monthDate);
     else if (tab === "history") fetchHistory(selected.crewId);
   }, [selected?.crewId, tab, monthDate]);
+
+  useEffect(() => {
+    if (adminView === "bugs") fetchBugs();
+  }, [adminView]);
 
   const selectCrew = (crew: Crew) => {
     setSelected(crew);
@@ -373,8 +406,18 @@ export default function AdminPage() {
             <div style={{ padding: "12px 12px 8px" }}>
               <button
                 onClick={() => setShowReg(true)}
-                style={{ width: "100%", padding: "9px 0", borderRadius: 8, background: "#1B9E5B", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 10 }}>
+                style={{ width: "100%", padding: "9px 0", borderRadius: 8, background: "#1B9E5B", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 6 }}>
                 + 크루 등록
+              </button>
+              <button
+                onClick={() => { setAdminView(v => v === "bugs" ? "crews" : "bugs"); setSelected(null); }}
+                style={{ width: "100%", padding: "9px 0", borderRadius: 8, background: adminView === "bugs" ? "#333" : "#f0f0f0", color: adminView === "bugs" ? "#fff" : "#555", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                🐛 버그 제보
+                {bugs.filter(b => !b.resolved).length > 0 && (
+                  <span style={{ background: "#E53935", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 700, padding: "1px 6px" }}>
+                    {bugs.filter(b => !b.resolved).length}
+                  </span>
+                )}
               </button>
               <input
                 type="text"
@@ -406,13 +449,77 @@ export default function AdminPage() {
           )}
 
           {/* Content — 모바일에서 크루 미선택 시 숨김 */}
-          {(!isMobile || selected) && (
+          {(!isMobile || selected || adminView === "bugs") && (
           <div style={{ flex: 1, overflow: "auto", padding: isMobile ? 12 : 20 }}>
-            {!selected ? (
+
+            {/* ── 버그 제보 뷰 ── */}
+            {adminView === "bugs" && (
+              <div style={{ maxWidth: isMobile ? "100%" : 680 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", margin: 0 }}>🐛 버그 제보</p>
+                  <button onClick={fetchBugs} style={{ fontSize: 12, color: "#888", background: "none", border: "none", cursor: "pointer" }}>새로고침</button>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                  {(["open", "resolved", "all"] as const).map(f => (
+                    <button key={f} onClick={() => setBugFilter(f)} style={{
+                      padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                      background: bugFilter === f ? "#1a1a1a" : "#f0f0f0",
+                      color: bugFilter === f ? "#fff" : "#555",
+                    }}>
+                      {f === "open" ? "미처리" : f === "resolved" ? "처리됨" : "전체"}
+                    </button>
+                  ))}
+                </div>
+                {(() => {
+                  const filtered = bugs.filter(b =>
+                    bugFilter === "all" ? true : bugFilter === "open" ? !b.resolved : b.resolved
+                  );
+                  if (filtered.length === 0) return (
+                    <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: "40px 16px", textAlign: "center", color: "#aaa", fontSize: 13 }}>
+                      {bugFilter === "open" ? "미처리 버그가 없어요 🎉" : "내역 없음"}
+                    </div>
+                  );
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {filtered.map(bug => (
+                        <div key={bug.id} style={{
+                          background: bug.resolved ? "#fafafa" : "#fff",
+                          borderRadius: 10, border: `0.5px solid ${bug.resolved ? "#e8e8e8" : "#e0e0e0"}`,
+                          padding: "14px 16px", opacity: bug.resolved ? 0.6 : 1,
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 12, background: "#f0f0f0", color: "#555" }}>{bug.type}</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a" }}>{bug.crewName}</span>
+                                <span style={{ fontSize: 11, color: "#aaa" }}>{bug.createdAt.slice(0, 10)}</span>
+                              </div>
+                              <p style={{ fontSize: 13, color: "#333", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{bug.description}</p>
+                            </div>
+                            <button
+                              onClick={() => toggleResolved(bug)}
+                              style={{
+                                flexShrink: 0, padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                                background: bug.resolved ? "#f0f0f0" : "#1B9E5B",
+                                color: bug.resolved ? "#888" : "#fff",
+                                border: "none",
+                              }}>
+                              {bug.resolved ? "재오픈" : "처리 완료"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {adminView === "crews" && !selected ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#bbb", fontSize: 14 }}>
                 왼쪽에서 크루를 선택하세요
               </div>
-            ) : (
+            ) : adminView === "crews" && selected && (
               <div style={{ maxWidth: isMobile ? "100%" : 680 }}>
                 {!isMobile && <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", margin: "0 0 12px" }}>{selected.name}</p>}
 
@@ -562,7 +669,7 @@ export default function AdminPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
                       <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: "#1a1a1a" }}>회원 정보</p>
-                      {([["이름", selected.name], ["사번", selected.loginId], ["역할", selected.role]] as [string, string][]).map(([k, v]) => (
+                      {([["이름", selected!.name], ["사번", selected!.loginId], ["역할", selected!.role]] as [string, string][]).map(([k, v]) => (
                         <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "0.5px solid #f5f5f5" }}>
                           <span style={{ fontSize: 13, color: "#888" }}>{k}</span>
                           <span style={{ fontSize: 13, fontWeight: 500, color: "#1a1a1a" }}>{v}</span>
@@ -585,3 +692,4 @@ export default function AdminPage() {
     </>
   );
 }
+

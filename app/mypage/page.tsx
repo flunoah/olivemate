@@ -267,11 +267,16 @@ export default function MyPage() {
                 style={{ width: "100%", border: "0.5px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", boxSizing: "border-box", resize: "none", fontFamily: "inherit" }}
               />
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!bugDesc.trim()) return;
                   const subject = encodeURIComponent(`[MATE 버그 제보] ${bugType || "기타"}`);
-                  const body = encodeURIComponent(`크루: ${name}\n유형: ${bugType || "기타"}\n\n내용:\n${bugDesc}`);
-                  window.open(`mailto:dragonusuny@naver.com?subject=${subject}&body=${body}`);
+                  const mailBody = encodeURIComponent(`크루: ${name}\n유형: ${bugType || "기타"}\n\n내용:\n${bugDesc}`);
+                  window.open(`mailto:dragonusuny@naver.com?subject=${subject}&body=${mailBody}`);
+                  await fetch("/api/bugs", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ crewName: name, type: bugType || "기타", description: bugDesc }),
+                  }).catch(() => {});
                   setBugSubmitted(true);
                 }}
                 disabled={!bugDesc.trim()}
