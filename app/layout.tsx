@@ -19,6 +19,10 @@ export default function RootLayout({
           name="google-site-verification"
           content="kp9Ob3ybE7kCCFy4rXK1WEaV2tbkZXBa_FIUV4kfY6I"
         />
+        <meta
+          name="naver-site-verification"
+          content="14ee60ca9e01be066bb41f203598f051"
+        />
       </head>
       <body className="bg-gray-50 max-w-md mx-auto min-h-screen relative pb-20">
         {children}
