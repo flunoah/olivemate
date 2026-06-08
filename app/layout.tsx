@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: “MATE 포인트”,
-  description: “올리브영 자소 포인트”,
+  title: "MATE",
+  description: "올리브영 자소 포인트",
 };
 
 export default function RootLayout({
@@ -15,8 +15,10 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <meta name="color-scheme" content="light" />
-        <meta name="google-site-verification" content="kp9Ob3ybE7kCCFy4rXK1WEaV2tbkZXBa_FIUV4kfY6I" />
-        <meta name="naver-site-verification" content="14ee60ca9e01be066bb41f203598f051" />
+        <meta
+          name="google-site-verification"
+          content="kp9Ob3ybE7kCCFy4rXK1WEaV2tbkZXBa_FIUV4kfY6I"
+        />
       </head>
       <body className="bg-gray-50 max-w-md mx-auto min-h-screen relative pb-20">
         {children}
