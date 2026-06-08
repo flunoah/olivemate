@@ -15,9 +15,34 @@ interface Ledger {
 }
 
 interface CancelTarget {
-  ledgerId: string | number;
+  ledgerIds: (string | number)[];
   amount: number;
   description: string;
+}
+
+type DisplayLedger = Ledger & { mergedIds: (string | number)[] };
+
+function mergeUseLedgers(ledgers: Ledger[]): DisplayLedger[] {
+  const result: DisplayLedger[] = [];
+  const useGroups: Record<string, DisplayLedger> = {};
+
+  for (const l of ledgers) {
+    if (l.ledgerType === "USE") {
+      const key = l.description || "포인트 사용";
+      if (useGroups[key]) {
+        useGroups[key].amount += l.amount;
+        if (l.id != null) useGroups[key].mergedIds.push(l.id);
+      } else {
+        const merged: DisplayLedger = { ...l, mergedIds: l.id != null ? [l.id] : [] };
+        useGroups[key] = merged;
+        result.push(merged);
+      }
+    } else {
+      result.push({ ...l, mergedIds: l.id != null ? [l.id] : [] });
+    }
+  }
+
+  return result;
 }
 
 function dDayLabel(expiredAt: string | null): string {
@@ -105,17 +130,20 @@ export default function HistoryPage() {
     setCancelError("");
     setCancelLoading(true);
     try {
-      const res = await fetch("/api/v1/points/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
-        body: JSON.stringify({ ledgerId: cancelTarget.ledgerId, crewId }),
-      });
-      if (res.ok) {
-        setCancelTarget(null);
-        fetchHistory(crewId, token);
-      } else {
-        setCancelError("취소 가능 시간이 지났습니다.");
+      for (const ledgerId of cancelTarget.ledgerIds) {
+        const res = await fetch("/api/v1/points/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+          body: JSON.stringify({ ledgerId, crewId }),
+        });
+        if (!res.ok) {
+          setCancelError("취소 가능 시간이 지났습니다.");
+          setCancelLoading(false);
+          return;
+        }
       }
+      setCancelTarget(null);
+      fetchHistory(crewId, token);
     } catch {
       setCancelError("오류가 발생했습니다.");
     } finally {
@@ -179,7 +207,7 @@ export default function HistoryPage() {
   const selectedLedgers = selectedDate ? (ledgersByDate[selectedDate] || []) : [];
 
   const typeInfo = (l: Ledger) => {
-    if (l.ledgerType === "INIT") return { icon: "🎁", label: "초기 지급", color: "#1565C0", sign: "+", sub: "만료일 없음 (영구 보유)" };
+    if (l.ledgerType === "INIT") return { icon: "🎁", label: "초기 지급", color: "#1565C0", sign: "+", sub: dDayLabel(l.expiredAt) };
     if (l.ledgerType === "EARN") return { icon: "✅", label: "적립", color: "#1B9E5B", sign: "+", sub: dDayLabel(l.expiredAt) };
     if (l.ledgerType === "USE")  return { icon: "🛍️", label: "사용", color: "#E53935", sign: "-", sub: l.description || "포인트 사용" };
     return { icon: "⏰", label: "소멸", color: "#888", sign: "-", sub: "소멸된 포인트" };
@@ -312,11 +340,11 @@ export default function HistoryPage() {
                 <p style={{ fontSize: 13, color: "#aaa", textAlign: "center", padding: "16px 0" }}>내역이 없습니다.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {selectedLedgers.map((l, i) => {
+                  {mergeUseLedgers(selectedLedgers).map((l, i, arr) => {
                     const info = typeInfo(l);
-                    const isTodayUse = l.ledgerType === "USE" && l.createdAt.startsWith(todayStr) && l.id != null;
+                    const isTodayUse = l.ledgerType === "USE" && l.createdAt.startsWith(todayStr) && l.mergedIds.length > 0;
                     return (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, paddingBottom: 10, borderBottom: i < selectedLedgers.length - 1 ? "0.5px solid #f0f0f0" : "none" }}>
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, paddingBottom: 10, borderBottom: i < arr.length - 1 ? "0.5px solid #f0f0f0" : "none" }}>
                         <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{info.icon}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>{info.label}</p>
@@ -334,7 +362,7 @@ export default function HistoryPage() {
                               onClick={() => {
                                 setCancelError("");
                                 setCancelTarget({
-                                  ledgerId: l.id!,
+                                  ledgerIds: l.mergedIds,
                                   amount: l.amount,
                                   description: l.description || "포인트 사용",
                                 });
