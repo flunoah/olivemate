@@ -21,7 +21,7 @@ export default function RootLayout({
         />
         <meta
           name="naver-site-verification"
-          content="14ee60ca9e01be066bb41f203598f051"
+          content="517e0cba1bc72e682a8d2d6e7462fdc8bd6e13a0"
         />
       </head>
       <body className="bg-gray-50 max-w-md mx-auto min-h-screen relative pb-20">
