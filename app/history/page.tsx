@@ -352,6 +352,9 @@ export default function HistoryPage() {
                           {l.grantedAt && l.ledgerType === "EARN" && (
                             <p style={{ fontSize: 11, color: "#aaa", margin: "1px 0 0" }}>지급일: {l.grantedAt.slice(0, 10)}</p>
                           )}
+                          {l.grantedAt && l.ledgerType === "USE" && (
+                            <p style={{ fontSize: 11, color: "#aaa", margin: "1px 0 0" }}>사용일: {l.grantedAt.slice(0, 10)}</p>
+                          )}
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                           <span style={{ fontSize: 14, fontWeight: 700, color: info.color }}>
