@@ -121,6 +121,7 @@ export default function DashboardPage() {
   const [registeredDates, setRegisteredDates] = useState<string[]>([]);
   const [useAmount, setUseAmount] = useState("");
   const [productName, setProductName] = useState("");
+  const [useDate, setUseDate] = useState("");
   const [pointError, setPointError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -190,7 +191,9 @@ export default function DashboardPage() {
     const now = new Date();
     const koreaOffset = 9 * 60 * 60 * 1000;
     const koreaTime = new Date(now.getTime() + koreaOffset);
-    setTodayStr(koreaTime.toISOString().slice(0, 10));
+    const today = koreaTime.toISOString().slice(0, 10);
+    setTodayStr(today);
+    setUseDate(today);
 
     const t = localStorage.getItem("token");
     if (!t) { router.push("/"); return; }
@@ -347,6 +350,7 @@ export default function DashboardPage() {
           description: productName || "포인트 사용",
           referenceId: null,
           productName: productName || null,
+          usedAt: useDate || todayStr,
         }),
       });
       if (!res.ok) {
@@ -363,7 +367,7 @@ export default function DashboardPage() {
       const ledgerId = data.ledgerId ?? data.id ?? "";
       const prod = productName;
 
-      setUseAmount(""); setProductName("");
+      setUseAmount(""); setProductName(""); setUseDate(todayStr);
       refresh();
 
       if (ledgerId) {
@@ -551,13 +555,22 @@ export default function DashboardPage() {
                 const dd = dateStr.slice(8);
                 return (
                   <div key={dateStr} style={{
-                    flex: 1, textAlign: "center", padding: "5px 2px 4px", borderRadius: 8,
-                    background: isToday ? "#1B9E5B" : sched ? "#E8F5E9" : "#f5f5f5",
-                    color: isToday ? "#fff" : sched ? "#1B9E5B" : isPast ? "#ccc" : "#aaa",
-                    border: isToday ? "none" : sched ? "1px solid #A5D6A7" : "none",
+                    flex: 1, textAlign: "center", padding: "5px 2px 8px", borderRadius: 8,
+                    position: "relative",
+                    background: sched ? "#E8F5E9" : "#f5f5f5",
+                    color: isToday ? "#1a1a1a" : sched ? "#1B9E5B" : isPast ? "#ccc" : "#aaa",
+                    border: sched ? "1px solid #A5D6A7" : "none",
                   }}>
                     <div style={{ fontSize: 9, fontWeight: 500, opacity: 0.75, lineHeight: 1.3 }}>{DAY_SHORT[jsDay]}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>{dd}</div>
+                    <div style={{ fontSize: 12, fontWeight: isToday ? 700 : 400, lineHeight: 1.4 }}>{dd}</div>
+                    {isToday && (
+                      <div style={{
+                        position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
+                        fontSize: 6.5, fontWeight: 600, color: "#fff", background: "#1B9E5B",
+                        borderRadius: 20, padding: "2px 3px", whiteSpace: "nowrap",
+                        lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                      }}><span style={{ position: "relative", top: 0.5 }}>TODAY</span></div>
+                    )}
                   </div>
                 );
               })}
@@ -682,6 +695,12 @@ export default function DashboardPage() {
           <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: "16px" }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 12 }}>포인트 사용</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <input
+                type="date"
+                value={useDate}
+                onChange={e => setUseDate(e.target.value)}
+                style={{ border: "0.5px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box", color: useDate ? "#1a1a1a" : "#aaa" }}
+              />
               <input
                 type="number"
                 value={useAmount}
