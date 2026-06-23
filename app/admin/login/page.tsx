@@ -25,8 +25,8 @@ export default function AdminLoginPage() {
         return;
       }
       const data = await res.json();
-      const token = data.accessToken;
-      const maxAge = data.expiresIn || 86400;
+      const token = data.data?.accessToken ?? data.accessToken;
+      const maxAge = data.data?.expiresIn ?? data.expiresIn ?? 86400;
       localStorage.setItem("adminToken", token);
       document.cookie = `adminToken=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
       router.push("/admin");
