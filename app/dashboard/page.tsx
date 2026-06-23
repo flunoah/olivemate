@@ -155,7 +155,8 @@ export default function DashboardPage() {
       ]);
       if (balRes.status === 401) { router.push("/"); return; }
       if (balRes.ok) {
-        const data = await balRes.json();
+        const res = await balRes.json();
+        const data = res.data ?? res;
         setBalance({
           balance: data.balance ?? 0,
           monthlyEarned: data.monthlyEarned ?? 0,
@@ -166,20 +167,17 @@ export default function DashboardPage() {
         });
       }
       if (schRes.ok) {
-        const schData = await schRes.json();
-        // API: { daysOfWeek: [3,4,5], startDate: "..." } — 서버 기준(1=월~7=일)
+        const schRes2 = await schRes.json();
+        const schData = schRes2?.data ?? schRes2;
         const rawDays: number[] = Array.isArray(schData)
           ? schData
           : (schData?.daysOfWeek ?? []);
         const converted = rawDays.map(serverDayToJsDay);
-        console.log("[schedule] 서버 원본:", rawDays);
-        console.log("[schedule] JS 변환:", converted);
         setScheduleDays(converted);
       }
       if (wdRes.ok) {
         const w = await wdRes.json();
-        const dates = Array.isArray(w) ? w : [];
-        console.log("[workday] 등록된 날짜:", dates);
+        const dates = Array.isArray(w) ? w : Array.isArray(w?.data) ? w.data : [];
         setRegisteredDates(dates);
       }
     } catch {

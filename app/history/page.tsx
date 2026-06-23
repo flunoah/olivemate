@@ -113,7 +113,7 @@ export default function HistoryPage() {
         if (!res.ok) return [];
         return res.json();
       })
-      .then(data => setLedgers(Array.isArray(data) ? data : []))
+      .then(data => setLedgers(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []))
       .catch(() => setLedgers([]))
       .finally(() => setLoading(false));
   };

@@ -48,7 +48,8 @@ export default function MyPage() {
     })
       .then(async res => {
         if (!res.ok) return null;
-        const data = await res.json();
+        const res2 = await res.json();
+        const data = res2?.data ?? res2;
         if (Array.isArray(data)) {
           setCurrentSchedule({ daysOfWeek: data, startDate: "" });
           setSelectedDays(data);
