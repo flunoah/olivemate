@@ -153,7 +153,8 @@ export default function DashboardPage() {
         fetch(`/api/v1/schedule/me/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
         fetch(`/api/v1/attendance/week/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
       ]);
-      if (balRes.status === 401) { router.push("/"); return; }
+      console.log("[fetchAll] balance status:", balRes.status);
+      if (balRes.status === 401) { console.log("[fetchAll] 401 → 로그인으로"); router.push("/"); return; }
       if (balRes.ok) {
         const res = await balRes.json();
         const data = res.data ?? res;
@@ -194,10 +195,13 @@ export default function DashboardPage() {
     setUseDate(today);
 
     const t = localStorage.getItem("token");
-    if (!t) { router.push("/"); return; }
+    console.log("[dashboard] token:", t?.slice(0, 30));
+    if (!t) { console.log("[dashboard] 토큰 없음 → 로그인으로"); router.push("/"); return; }
     try {
       const payload = JSON.parse(atob(t.split(".")[1]));
+      console.log("[dashboard] payload:", payload);
       if (payload.exp * 1000 < Date.now()) {
+        console.log("[dashboard] 토큰 만료 → 로그인으로");
         localStorage.clear();
         document.cookie = "token=; path=/; max-age=0";
         router.push("/");
@@ -206,7 +210,8 @@ export default function DashboardPage() {
       const id = payload.sub;
       setCrewId(id);
       fetchAll(id, t).finally(() => setPageLoading(false));
-    } catch {
+    } catch (e) {
+      console.log("[dashboard] 파싱 오류 → 로그인으로", e);
       localStorage.clear();
       document.cookie = "token=; path=/; max-age=0";
       router.push("/");
