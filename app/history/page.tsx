@@ -209,7 +209,7 @@ export default function HistoryPage() {
   const typeInfo = (l: Ledger) => {
     if (l.ledgerType === "INIT") return { icon: "🎁", label: "초기 지급", color: "#1565C0", sign: "+", sub: dDayLabel(l.expiredAt) };
     if (l.ledgerType === "EARN") return { icon: "✅", label: "적립", color: "#1B9E5B", sign: "+", sub: dDayLabel(l.expiredAt) };
-    if (l.ledgerType === "USE")  return { icon: "🛍️", label: "사용", color: "#E53935", sign: "-", sub: l.description || "포인트 사용" };
+    if (l.ledgerType === "USE")  return { icon: "🛍️", label: l.description || "포인트 사용", color: "#E53935", sign: "-", sub: l.description ? "포인트 사용" : "" };
     return { icon: "⏰", label: "소멸", color: "#888", sign: "-", sub: "소멸된 포인트" };
   };
 
