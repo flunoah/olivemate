@@ -12,6 +12,8 @@ interface Ledger {
   expiredAt: string | null;
   createdAt: string;
   description?: string;
+  productName?: string;
+  memo?: string;
 }
 
 interface CancelTarget {
@@ -22,13 +24,18 @@ interface CancelTarget {
 
 type DisplayLedger = Ledger & { mergedIds: (string | number)[] };
 
+function getUseName(l: Ledger): string | null {
+  const name = l.productName || l.memo || l.description;
+  return name && name !== "포인트 사용" ? name : null;
+}
+
 function mergeUseLedgers(ledgers: Ledger[]): DisplayLedger[] {
   const result: DisplayLedger[] = [];
   const useGroups: Record<string, DisplayLedger> = {};
 
   for (const l of ledgers) {
     if (l.ledgerType === "USE") {
-      const key = l.description || "포인트 사용";
+      const key = l.productName || l.memo || l.description || "포인트 사용";
       if (useGroups[key]) {
         useGroups[key].amount += l.amount;
         if (l.id != null) useGroups[key].mergedIds.push(l.id);
@@ -209,7 +216,7 @@ export default function HistoryPage() {
   const typeInfo = (l: Ledger) => {
     if (l.ledgerType === "INIT") return { icon: "🎁", label: "초기 지급", color: "#1565C0", sign: "+", sub: dDayLabel(l.expiredAt) };
     if (l.ledgerType === "EARN") return { icon: "✅", label: "적립", color: "#1B9E5B", sign: "+", sub: dDayLabel(l.expiredAt) };
-    if (l.ledgerType === "USE")  return { icon: "🛍️", label: l.description || "포인트 사용", color: "#E53935", sign: "-", sub: l.description ? "포인트 사용" : "" };
+    if (l.ledgerType === "USE") { const name = getUseName(l); return { icon: "🛍️", label: name || "포인트 사용", color: "#E53935", sign: "-", sub: name ? "포인트 사용" : "" }; }
     return { icon: "⏰", label: "소멸", color: "#888", sign: "-", sub: "소멸된 포인트" };
   };
 
