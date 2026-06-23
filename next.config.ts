@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  generateBuildId: async () => `build-${Date.now()}`,
   async rewrites() {
     return [
       {
