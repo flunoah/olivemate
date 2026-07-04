@@ -51,10 +51,15 @@ export default function LoginPage() {
 
       const data = await res.json();
       const token = data.data?.accessToken ?? data.accessToken;
+      const refreshToken = data.data?.refreshToken ?? data.refreshToken;
       const maxAge = stayLoggedIn ? 30 * 24 * 60 * 60 : 86400;
       localStorage.setItem("token", token);
       localStorage.setItem("stayLoggedIn", stayLoggedIn ? "true" : "false");
       document.cookie = `token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+      if (refreshToken) {
+        if (stayLoggedIn) localStorage.setItem("refreshToken", refreshToken);
+        else sessionStorage.setItem("refreshToken", refreshToken);
+      }
       router.push("/dashboard");
     } catch {
       setError("서버 연결에 실패했습니다.");

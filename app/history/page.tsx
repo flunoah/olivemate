@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
+import { authFetch, clearAuth, isTokenExpired, silentRefresh } from "../lib/auth";
 
 interface Ledger {
   id?: string | number;
@@ -103,10 +104,12 @@ export default function HistoryPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const fetchHistory = (id: string, t: string) => {
+  const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
+
+  const fetchHistory = (id: string) => {
     setLoading(true);
-    fetch(`/api/v1/points/history/${id}`, {
-      headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+    authFetch(`/api/v1/points/history/${id}`, {
+      headers: { 'X-Admin-Key': adminKey },
     })
       .then(async res => {
         if (res.status === 401) { router.push("/"); return []; }
@@ -125,11 +128,25 @@ export default function HistoryPage() {
 
     const t = localStorage.getItem("token");
     if (!t) { router.push("/"); return; }
-    const payload = JSON.parse(atob(t.split(".")[1]));
-    const id = payload.sub;
-    setCrewId(id);
-    setToken(t);
-    fetchHistory(id, t);
+
+    const proceed = (token: string) => {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const id = payload.sub;
+        setCrewId(id);
+        setToken(token);
+        fetchHistory(id);
+      } catch { clearAuth(); router.push("/"); }
+    };
+
+    if (isTokenExpired()) {
+      silentRefresh().then(newToken => {
+        if (newToken) proceed(newToken);
+        else { clearAuth(); router.push("/"); }
+      });
+    } else {
+      proceed(t);
+    }
   }, []);
 
   const handleCancelLedger = async () => {
@@ -138,9 +155,9 @@ export default function HistoryPage() {
     setCancelLoading(true);
     try {
       for (const ledgerId of cancelTarget.ledgerIds) {
-        const res = await fetch("/api/v1/points/cancel", {
+        const res = await authFetch("/api/v1/points/cancel", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+          headers: { "Content-Type": "application/json", 'X-Admin-Key': adminKey },
           body: JSON.stringify({ ledgerId, crewId }),
         });
         if (!res.ok) {
@@ -150,7 +167,7 @@ export default function HistoryPage() {
         }
       }
       setCancelTarget(null);
-      fetchHistory(crewId, token);
+      fetchHistory(crewId);
     } catch {
       setCancelError("오류가 발생했습니다.");
     } finally {

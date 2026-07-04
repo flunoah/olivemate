@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
+import { authFetch, clearAuth, isTokenExpired, silentRefresh } from "../lib/auth";
 
 interface Balance {
   balance: number;
@@ -119,6 +120,7 @@ export default function DashboardPage() {
   });
   const [scheduleDays, setScheduleDays] = useState<number[]>([]);
   const [registeredDates, setRegisteredDates] = useState<string[]>([]);
+  const [absentDates, setAbsentDates] = useState<string[]>([]);
   const [useAmount, setUseAmount] = useState("");
   const [productName, setProductName] = useState("");
   const [useDate, setUseDate] = useState("");
@@ -143,18 +145,16 @@ export default function DashboardPage() {
     localStorage.setItem("homeAddBannerDismissed", "true");
   };
 
-  const tok = () => localStorage.getItem("token") || "";
-
-  const fetchAll = async (id: string, t: string) => {
+  const fetchAll = async (id: string, _t: string) => {
     try {
       const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
+      const headers = { 'X-Admin-Key': adminKey };
       const [balRes, schRes, wdRes] = await Promise.all([
-        fetch(`/api/v1/points/balance/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
-        fetch(`/api/v1/schedule/me/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
-        fetch(`/api/v1/attendance/week/${id}`, { headers: { Authorization: `Bearer ${t}`, 'X-Admin-Key': adminKey } }),
+        authFetch(`/api/v1/points/balance/${id}`, { headers }),
+        authFetch(`/api/v1/schedule/me/${id}`, { headers }),
+        authFetch(`/api/v1/attendance/week/${id}`, { headers }),
       ]);
-      console.log("[fetchAll] balance status:", balRes.status);
-      if (balRes.status === 401) { console.log("[fetchAll] 401 → 로그인으로"); router.push("/"); return; }
+      if (balRes.status === 401) { router.push("/"); return; }
       if (balRes.ok) {
         const res = await balRes.json();
         const data = res.data ?? res;
@@ -178,8 +178,22 @@ export default function DashboardPage() {
       }
       if (wdRes.ok) {
         const w = await wdRes.json();
-        const dates = Array.isArray(w) ? w : Array.isArray(w?.data) ? w.data : [];
-        setRegisteredDates(dates);
+        const arr = Array.isArray(w) ? w : Array.isArray(w?.data) ? w.data : [];
+        // 신규 형식: [{ date, skipped }], 구 형식: ["2026-07-01", ...]
+        const registered: string[] = [];
+        const absent: string[] = [];
+        for (const item of arr) {
+          if (typeof item === "string") {
+            registered.push(item);
+          } else if (item && typeof item === "object") {
+            const d = item.date ?? item.workDate;
+            if (!d) continue;
+            if (item.skipped) absent.push(d);
+            else registered.push(d);
+          }
+        }
+        setRegisteredDates(registered);
+        setAbsentDates(absent);
       }
     } catch {
       showToast("데이터를 불러오지 못했습니다.", "error");
@@ -195,26 +209,26 @@ export default function DashboardPage() {
     setUseDate(today);
 
     const t = localStorage.getItem("token");
-    console.log("[dashboard] token:", t?.slice(0, 30));
-    if (!t) { console.log("[dashboard] 토큰 없음 → 로그인으로"); router.push("/"); return; }
-    try {
-      const payload = JSON.parse(atob(t.split(".")[1]));
-      console.log("[dashboard] payload:", payload);
-      if (payload.exp * 1000 < Date.now()) {
-        console.log("[dashboard] 토큰 만료 → 로그인으로");
-        localStorage.clear();
-        document.cookie = "token=; path=/; max-age=0";
+    if (!t) { router.push("/"); return; }
+
+    const proceed = (token: string) => {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setCrewId(payload.sub);
+        fetchAll(payload.sub, token).finally(() => setPageLoading(false));
+      } catch {
+        clearAuth();
         router.push("/");
-        return;
       }
-      const id = payload.sub;
-      setCrewId(id);
-      fetchAll(id, t).finally(() => setPageLoading(false));
-    } catch (e) {
-      console.log("[dashboard] 파싱 오류 → 로그인으로", e);
-      localStorage.clear();
-      document.cookie = "token=; path=/; max-age=0";
-      router.push("/");
+    };
+
+    if (isTokenExpired()) {
+      silentRefresh().then((newToken) => {
+        if (newToken) proceed(newToken);
+        else { clearAuth(); router.push("/"); }
+      });
+    } else {
+      proceed(t);
     }
   }, []);
 
@@ -247,19 +261,20 @@ export default function DashboardPage() {
 
   // 디버그: 요일별 상태 출력
   useEffect(() => {
-    if (!todayStr || (!scheduleDays.length && !registeredDates.length)) return;
+    if (!todayStr || (!scheduleDays.length && !registeredDates.length && !absentDates.length)) return;
     getThisWeekDateStrings(todayStr).forEach(({ dateStr, jsDay }) => {
       const registered = registeredDates.includes(dateStr);
       console.log(
         `[${DAY_SHORT[jsDay]}] ${dateStr}`,
         "scheduled:", scheduleDays.includes(jsDay),
         "registered:", registered,
+        "absent:", absentDates.includes(dateStr),
         "extra:", registered && !scheduleDays.includes(jsDay),
       );
     });
-  }, [scheduleDays, registeredDates, todayStr]);
+  }, [scheduleDays, registeredDates, absentDates, todayStr]);
 
-  const refresh = () => fetchAll(crewId, tok());
+  const refresh = () => fetchAll(crewId, "");
 
   const isScheduled = (jsDay: number) => scheduleDays.includes(jsDay);
 
@@ -284,18 +299,17 @@ export default function DashboardPage() {
     return "UPCOMING_NONE";
   };
 
+  const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
+
   const handleRegister = async (dateStr: string, jsDay: number) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/attendance/register", {
+      const res = await authFetch("/api/v1/attendance/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+        headers: { "Content-Type": "application/json", 'X-Admin-Key': adminKey },
         body: JSON.stringify({ crewId, workDate: dateStr, type: "EXTRA" }),
       });
       if (res.ok) {
-        const payDay = new Date(dateStr + "T00:00:00");
-        payDay.setDate(payDay.getDate() + 1);
-        const payLabel = `${payDay.getMonth() + 1}월 ${payDay.getDate()}일`;
         showToast(`${DAY_SHORT[jsDay]}요일 연장 근무 등록! 근무한 다음 날에 포인트가 지급돼요.`);
         refresh();
       } else {
@@ -308,9 +322,9 @@ export default function DashboardPage() {
   const handleCancel = async (dateStr: string, jsDay: number) => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `/api/v1/attendance/cancel?crewId=${crewId}&workDate=${dateStr}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' } }
+        { method: "DELETE", headers: { 'X-Admin-Key': adminKey } }
       );
       if (res.ok) {
         showToast(`${DAY_SHORT[jsDay]}요일 근무 취소됐어요.`);
@@ -325,13 +339,29 @@ export default function DashboardPage() {
   const handleMarkAbsent = async (dateStr: string, jsDay: number) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/attendance/absent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
-        body: JSON.stringify({ crewId, workDate: dateStr }),
-      });
+      const res = await authFetch(
+        `/api/v1/attendance/cancel?crewId=${crewId}&workDate=${dateStr}`,
+        { method: "DELETE" }
+      );
       if (res.ok) {
         showToast(`${DAY_SHORT[jsDay]}요일 결근 처리됐어요.`);
+        refresh();
+      } else {
+        showToast(apiErrorMessage(res.status), "error");
+      }
+    } catch { showToast("오류가 발생했습니다.", "error"); }
+    finally { setLoading(false); }
+  };
+
+  const handleReinstate = async (dateStr: string, jsDay: number) => {
+    setLoading(true);
+    try {
+      const res = await authFetch(
+        `/api/v1/attendance/reinstate?crewId=${crewId}&workDate=${dateStr}`,
+        { method: "PUT", headers: { 'X-Admin-Key': adminKey } }
+      );
+      if (res.ok) {
+        showToast(`${DAY_SHORT[jsDay]}요일 결근이 취소됐어요.`);
         refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
@@ -345,9 +375,9 @@ export default function DashboardPage() {
     if (!useAmount || !crewId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/v1/points/use/${crewId}`, {
+      const res = await authFetch(`/api/v1/points/use/${crewId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+        headers: { "Content-Type": "application/json", 'X-Admin-Key': adminKey },
         body: JSON.stringify({
           amount: Number(useAmount),
           description: productName || "포인트 사용",
@@ -389,9 +419,9 @@ export default function DashboardPage() {
     const target = pendingUndo;
     setPendingUndo(null);
     try {
-      const res = await fetch("/api/v1/points/cancel", {
+      const res = await authFetch("/api/v1/points/cancel", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${tok()}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+        headers: { "Content-Type": "application/json", 'X-Admin-Key': adminKey },
         body: JSON.stringify({ ledgerId: target.ledgerId, crewId }),
       });
       if (res.ok) {
@@ -405,10 +435,11 @@ export default function DashboardPage() {
 
   const weekDays = getThisWeekDateStrings(todayStr);
 
-  // 연장 추가 가능한 날 — 비소정 + 미등록 + 오늘 이후
+  // 연장 추가 가능한 날 — 비소정 + 미등록 + 미결근 + 오늘 이후
   const availableExtraDays = weekDays.filter(({ dateStr, jsDay }) =>
     !isScheduled(jsDay) &&
     !registeredDates.includes(dateStr) &&
+    !absentDates.includes(dateStr) &&
     todayStr ? dateStr >= todayStr : false
   );
 
@@ -579,10 +610,10 @@ export default function DashboardPage() {
               })}
             </div>
 
-            {/* 이번 주 리스트 — 소정이거나 등록된 날만 표시 */}
+            {/* 이번 주 리스트 — 소정이거나 등록·결근된 날만 표시 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {weekDays.filter(({ dateStr, jsDay }) =>
-                isScheduled(jsDay) || registeredDates.includes(dateStr)
+                isScheduled(jsDay) || registeredDates.includes(dateStr) || absentDates.includes(dateStr)
               ).map(({ dateStr, jsDay }) => {
                 const [, mm, dd] = dateStr.split("-");
                 const dateLabel = `${DAY_LABELS[jsDay]} ${mm}.${dd}`;
@@ -590,13 +621,21 @@ export default function DashboardPage() {
                 const isToday  = dateStr === todayStr;
                 const scheduled  = isScheduled(jsDay);
                 const registered = registeredDates.includes(dateStr);
+                const absent     = absentDates.includes(dateStr);
 
                 // --- visual config (getDayStatus를 거치지 않고 직접 판단) ---
                 let bg = "#fff", border = "0.5px solid #eee", opacity = 1;
                 let iconBg = "#e8e8e8", iconColor = "#fff", iconText = DAY_SHORT[jsDay];
                 let badge = "", badgeBg = "transparent", badgeColor = "#888", sub = "";
 
-                if (isPast) {
+                if (absent) {
+                  // skipped=true → 결근 처리된 날 (과거/오늘/미래 공통)
+                  bg = "#FFF5F5"; border = "0.5px solid #FFCDD2";
+                  opacity = isPast ? 0.6 : 1;
+                  iconBg = "#E53935"; iconColor = "#fff"; iconText = "✕";
+                  badge = "결근"; badgeBg = "#FFEBEE"; badgeColor = "#E53935";
+                  sub = isPast ? "포인트 미적립" : "결근 처리됨";
+                } else if (isPast) {
                   if (scheduled && registered) {
                     bg = "#F0FFF4"; border = "0.5px solid #A5D6A7";
                     iconBg = "#1B9E5B"; iconText = "✓";
@@ -607,7 +646,7 @@ export default function DashboardPage() {
                     badge = "연장"; badgeBg = "#E3F2FD"; badgeColor = "#1565C0";
                     sub = "추가 근무 완료";
                   } else {
-                    // scheduled + not registered → ABSENT
+                    // scheduled + not registered → 미처리 결근 (자동 미적립)
                     bg = "#fff"; opacity = 0.5; iconBg = "#e0e0e0";
                     badge = "결근"; badgeBg = "#FFEBEE"; badgeColor = "#E53935";
                     sub = "포인트 미적립";
@@ -635,11 +674,12 @@ export default function DashboardPage() {
                   }
                 }
 
-                const btnS = (variant: "red" | "gray") => ({
+                const btnS = (variant: "red" | "gray" | "redFilled") => ({
                   fontSize: 12, padding: "4px 10px", borderRadius: 8, background: "#fff",
                   cursor: "pointer" as const, fontWeight: 600, opacity: loading ? 0.5 : 1,
-                  ...(variant === "red"  ? { border: "0.5px solid #E53935", color: "#E53935" } : {}),
-                  ...(variant === "gray" ? { border: "0.5px solid #ccc",    color: "#555"    } : {}),
+                  ...(variant === "red"       ? { border: "0.5px solid #E53935", color: "#E53935" } : {}),
+                  ...(variant === "gray"      ? { border: "0.5px solid #ccc",    color: "#555"    } : {}),
+                  ...(variant === "redFilled" ? { border: "0.5px solid #E53935", background: "#E53935", color: "#fff" } : {}),
                 });
 
                 return (
@@ -669,10 +709,13 @@ export default function DashboardPage() {
                     </div>
 
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      {!isPast && scheduled && (
+                      {!isPast && absent && (
+                        <button onClick={() => handleReinstate(dateStr, jsDay)} disabled={loading} style={btnS("redFilled")}>결근 취소</button>
+                      )}
+                      {!isPast && !absent && scheduled && (
                         <button onClick={() => handleMarkAbsent(dateStr, jsDay)} disabled={loading} style={btnS("red")}>결근</button>
                       )}
-                      {!isPast && !scheduled && registered && (
+                      {!isPast && !absent && !scheduled && registered && (
                         <button onClick={() => handleCancel(dateStr, jsDay)} disabled={loading} style={btnS("gray")}>삭제</button>
                       )}
                     </div>

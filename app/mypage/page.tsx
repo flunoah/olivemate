@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
+import { authFetch, clearAuth, isTokenExpired, silentRefresh } from "../lib/auth";
 
 const DAYS = [
   { label: "일", value: 0 },
@@ -35,32 +36,48 @@ export default function MyPage() {
   const [bugDesc, setBugDesc] = useState("");
   const [bugSubmitted, setBugSubmitted] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) { router.push("/"); return; }
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    setName(payload.name || "크루");
-    const crewId = payload.sub;
+  const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
 
-    setPageLoading(true);
-    fetch(`/api/v1/schedule/me/${crewId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
-    })
-      .then(async res => {
-        if (!res.ok) return null;
-        const res2 = await res.json();
-        const data = res2?.data ?? res2;
-        if (Array.isArray(data)) {
-          setCurrentSchedule({ daysOfWeek: data, startDate: "" });
-          setSelectedDays(data);
-        } else if (data && Array.isArray(data.daysOfWeek)) {
-          setCurrentSchedule(data);
-          setSelectedDays(data.daysOfWeek);
-          setStartDate(data.startDate || "");
-        }
-      })
-      .catch(() => {})
-      .finally(() => setPageLoading(false));
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    if (!t) { router.push("/"); return; }
+
+    const proceed = (token: string) => {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setName(payload.name || "크루");
+        const crewId = payload.sub;
+
+        setPageLoading(true);
+        authFetch(`/api/v1/schedule/me/${crewId}`, {
+          headers: { 'X-Admin-Key': adminKey },
+        })
+          .then(async res => {
+            if (!res.ok) return null;
+            const res2 = await res.json();
+            const data = res2?.data ?? res2;
+            if (Array.isArray(data)) {
+              setCurrentSchedule({ daysOfWeek: data, startDate: "" });
+              setSelectedDays(data);
+            } else if (data && Array.isArray(data.daysOfWeek)) {
+              setCurrentSchedule(data);
+              setSelectedDays(data.daysOfWeek);
+              setStartDate(data.startDate || "");
+            }
+          })
+          .catch(() => {})
+          .finally(() => setPageLoading(false));
+      } catch { clearAuth(); router.push("/"); }
+    };
+
+    if (isTokenExpired()) {
+      silentRefresh().then(newToken => {
+        if (newToken) proceed(newToken);
+        else { clearAuth(); router.push("/"); }
+      });
+    } else {
+      proceed(t);
+    }
   }, []);
 
   const toggleDay = (day: number) =>
@@ -79,9 +96,9 @@ export default function MyPage() {
     const payload = JSON.parse(atob(token.split(".")[1]));
     const crewId = payload.sub;
     try {
-      const res = await fetch("/api/v1/schedule", {
+      const res = await authFetch("/api/v1/schedule", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Admin-Key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key' },
+        headers: { "Content-Type": "application/json", 'X-Admin-Key': adminKey },
         body: JSON.stringify({ crewId, daysOfWeek: selectedDays, startDate }),
       });
       if (res.ok) {
@@ -290,7 +307,7 @@ export default function MyPage() {
 
         {/* 로그아웃 */}
         <button
-          onClick={() => { localStorage.removeItem("token"); router.push("/"); }}
+          onClick={() => { clearAuth(); router.push("/"); }}
           style={{ marginTop: 8, padding: "14px 0", borderRadius: 10, background: "#fff", color: "#E53935", border: "0.5px solid #e0e0e0", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           로그아웃
         </button>
