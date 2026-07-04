@@ -303,14 +303,19 @@ export default function DashboardPage() {
 
   const handleRegister = async (dateStr: string, jsDay: number) => {
     setLoading(true);
+    const isScheduledDay = isScheduled(jsDay);
     try {
       const res = await authFetch("/api/v1/attendance/register", {
         method: "POST",
         headers: { "Content-Type": "application/json", 'X-Admin-Key': adminKey },
-        body: JSON.stringify({ crewId, workDate: dateStr, type: "EXTRA" }),
+        body: JSON.stringify({ crewId, workDate: dateStr }),
       });
       if (res.ok) {
-        showToast(`${DAY_SHORT[jsDay]}요일 연장 근무 등록! 근무한 다음 날에 포인트가 지급돼요.`);
+        showToast(
+          isScheduledDay
+            ? `${DAY_SHORT[jsDay]}요일 근무 등록 완료! 다음 날 포인트가 지급돼요.`
+            : `${DAY_SHORT[jsDay]}요일 연장 근무 등록! 근무한 다음 날에 포인트가 지급돼요.`
+        );
         refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
@@ -646,10 +651,11 @@ export default function DashboardPage() {
                     badge = "연장"; badgeBg = "#E3F2FD"; badgeColor = "#1565C0";
                     sub = "추가 근무 완료";
                   } else {
-                    // scheduled + not registered → 미처리 결근 (자동 미적립)
-                    bg = "#fff"; opacity = 0.5; iconBg = "#e0e0e0";
-                    badge = "결근"; badgeBg = "#FFEBEE"; badgeColor = "#E53935";
-                    sub = "포인트 미적립";
+                    // scheduled + not registered (결근 처리된 게 아니라 미등록)
+                    bg = "#FFFBF0"; border = "0.5px solid #FFD54F"; opacity = 0.8;
+                    iconBg = "#FFF9E6"; iconColor = "#E65100"; iconText = "!";
+                    badge = "미등록"; badgeBg = "#FFF3CD"; badgeColor = "#E65100";
+                    sub = "근무 등록이 필요해요";
                   }
                 } else if (isToday) {
                   if (scheduled) {
@@ -709,6 +715,9 @@ export default function DashboardPage() {
                     </div>
 
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      {isPast && scheduled && !registered && !absent && (
+                        <button onClick={() => handleRegister(dateStr, jsDay)} disabled={loading} style={btnS("gray")}>등록</button>
+                      )}
                       {!isPast && absent && (
                         <button onClick={() => handleReinstate(dateStr, jsDay)} disabled={loading} style={btnS("redFilled")}>결근 취소</button>
                       )}
