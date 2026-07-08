@@ -316,7 +316,7 @@ export default function DashboardPage() {
             ? `${DAY_SHORT[jsDay]}요일 근무 등록 완료! 다음 날 포인트가 지급돼요.`
             : `${DAY_SHORT[jsDay]}요일 연장 근무 등록! 근무한 다음 날에 포인트가 지급돼요.`
         );
-        refresh();
+        await refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
       }
@@ -333,7 +333,7 @@ export default function DashboardPage() {
       );
       if (res.ok) {
         showToast(`${DAY_SHORT[jsDay]}요일 근무 취소됐어요.`);
-        refresh();
+        await refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
       }
@@ -346,11 +346,11 @@ export default function DashboardPage() {
     try {
       const res = await authFetch(
         `/api/v1/attendance/cancel?crewId=${crewId}&workDate=${dateStr}`,
-        { method: "DELETE" }
+        { method: "DELETE", headers: { 'X-Admin-Key': adminKey } }
       );
       if (res.ok) {
         showToast(`${DAY_SHORT[jsDay]}요일 결근 처리됐어요.`);
-        refresh();
+        await refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
       }
@@ -367,7 +367,7 @@ export default function DashboardPage() {
       );
       if (res.ok) {
         showToast(`${DAY_SHORT[jsDay]}요일 결근이 취소됐어요.`);
-        refresh();
+        await refresh();
       } else {
         showToast(apiErrorMessage(res.status), "error");
       }
@@ -406,7 +406,7 @@ export default function DashboardPage() {
       const prod = productName;
 
       setUseAmount(""); setProductName(""); setUseDate(todayStr);
-      refresh();
+      await refresh();
 
       if (ledgerId) {
         if (undoIntervalRef.current) clearInterval(undoIntervalRef.current);
@@ -431,7 +431,7 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         showToast("포인트 사용이 취소됐어요.");
-        refresh();
+        await refresh();
       } else {
         showToast("취소 가능 시간이 지났습니다.", "error");
       }
