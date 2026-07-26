@@ -185,7 +185,7 @@ export default function HistoryPage() {
     `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
   const ledgersByDate = ledgers.reduce((acc, l) => {
-    const date = l.createdAt.slice(0, 10);
+    const date = l.grantedAt.slice(0, 10);
     if (!acc[date]) acc[date] = [];
     acc[date].push(l);
     return acc;
@@ -212,7 +212,7 @@ export default function HistoryPage() {
   };
 
   const currentMonthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
-  const thisMonthLedgers = ledgers.filter(l => l.createdAt.startsWith(currentMonthPrefix));
+  const thisMonthLedgers = ledgers.filter(l => l.grantedAt.startsWith(currentMonthPrefix));
   const totalEarned = thisMonthLedgers.filter(l => l.ledgerType === "EARN" || l.ledgerType === "INIT").reduce((s, l) => s + l.amount, 0);
   const totalUsed = thisMonthLedgers.filter(l => l.ledgerType === "USE").reduce((s, l) => s + l.amount, 0);
   const totalExpiring = Object.values(expiringByDate).reduce((s, v) => s + v, 0);
@@ -225,7 +225,7 @@ export default function HistoryPage() {
   const prevMonthIdx = month === 0 ? 11 : month - 1;
   const prevMonthPrefix = `${prevYear}-${String(prevMonthIdx + 1).padStart(2, "0")}`;
   const prevMonthLedgers = ledgers.filter(l =>
-    l.createdAt.startsWith(prevMonthPrefix) && (l.ledgerType === "EARN" || l.ledgerType === "INIT")
+    l.grantedAt.startsWith(prevMonthPrefix) && (l.ledgerType === "EARN" || l.ledgerType === "INIT")
   );
 
   const selectedLedgers = selectedDate ? (ledgersByDate[selectedDate] || []) : [];
