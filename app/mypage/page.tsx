@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
 import { authFetch, clearAuth, isTokenExpired, silentRefresh } from "../lib/auth";
 
+// ponytail: 버그 제보 섹션은 기능은 유지하고 노출만 끔 (FR-01). 재노출 시 true로.
+const SHOW_BUG_REPORT = false;
+
 const DAYS = [
   { label: "일", value: 0 },
   { label: "월", value: 1 },
@@ -251,6 +254,7 @@ export default function MyPage() {
         )}
 
         {/* 버그 제보 */}
+        {SHOW_BUG_REPORT && (
         <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", marginBottom: 12 }}>🐛 버그 제보하기</p>
           {bugSubmitted ? (
@@ -304,6 +308,7 @@ export default function MyPage() {
             </>
           )}
         </div>
+        )}
 
         {/* 로그아웃 */}
         <button
@@ -311,6 +316,22 @@ export default function MyPage() {
           style={{ marginTop: 8, padding: "14px 0", borderRadius: 10, background: "#fff", color: "#E53935", border: "0.5px solid #e0e0e0", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           로그아웃
         </button>
+
+        {/* 팁박스 (FR-02) */}
+        <div style={{ background: "#FFF8E1", borderRadius: 10, border: "0.5px solid #FFE7A0", padding: 16 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#8a6d1a", marginBottom: 8 }}>💡 알아두세요</p>
+          <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>포인트는 익일 오전 1시에 적립되니 놀라지 마세요.</li>
+            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>근무 스케줄 변경은 가급적 적용되는 해당 주의 월요일에 입력해주세요.</li>
+            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>
+              오류가 발생하면{" "}
+              <a href="https://open.kakao.com/o/gMhCNOFi" target="_blank" rel="noopener noreferrer" style={{ color: "#1B9E5B", fontWeight: 600, textDecoration: "underline" }}>
+                오픈채팅방
+              </a>
+              으로 연락주세요.
+            </li>
+          </ul>
+        </div>
 
       </div>
     </div>
