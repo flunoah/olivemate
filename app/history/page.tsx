@@ -9,6 +9,7 @@ interface Ledger {
   id?: string | number;
   ledgerType: string;
   amount: number;
+  remaining: number;
   grantedAt: string;
   expiredAt: string | null;
   createdAt: string;
@@ -192,10 +193,10 @@ export default function HistoryPage() {
   }, {} as Record<string, Ledger[]>);
 
   const expiringByDate = ledgers.reduce((acc, l) => {
-    if (l.expiredAt && l.ledgerType !== "EXPIRE" && l.ledgerType !== "USE") {
+    if (l.expiredAt && l.remaining > 0 && l.expiredAt.slice(0, 10) >= todayStr) {
       const date = l.expiredAt.slice(0, 10);
       if (!acc[date]) acc[date] = 0;
-      acc[date] += l.amount;
+      acc[date] += l.remaining;
     }
     return acc;
   }, {} as Record<string, number>);
