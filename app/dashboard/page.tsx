@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
 import { authFetch, clearAuth, isTokenExpired, silentRefresh } from "../lib/auth";
+import { fetchNotifications } from "../lib/notifications";
 
 interface Balance {
   balance: number;
@@ -135,6 +136,7 @@ export default function DashboardPage() {
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [undoLoading, setUndoLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const undoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
@@ -231,6 +233,8 @@ export default function DashboardPage() {
     } else {
       proceed(t);
     }
+
+    fetchNotifications(true).then(list => setUnreadCount(list.length));
   }, []);
 
   // 모바일 홈 화면 추가 배너
@@ -542,10 +546,30 @@ export default function DashboardPage() {
         {/* 헤더 */}
         <div style={{ background: "#1B9E5B", color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>🫒 MATE 포인트</div>
-          <button onClick={() => { localStorage.clear(); document.cookie = "token=; path=/; max-age=0"; router.push("/"); }}
-            style={{ fontSize: 13, opacity: 0.85, background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
-            로그아웃
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <button onClick={() => router.push("/notifications")}
+              aria-label="알림"
+              style={{ position: "relative", background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 2, display: "flex" }}>
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {unreadCount > 0 && (
+                <span style={{
+                  position: "absolute", top: -3, right: -3, minWidth: 14, height: 14, borderRadius: 8,
+                  background: "#E53935", color: "#fff", fontSize: 9, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px",
+                  border: "1.5px solid #1B9E5B",
+                }}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+            <button onClick={() => { localStorage.clear(); document.cookie = "token=; path=/; max-age=0"; router.push("/"); }}
+              style={{ fontSize: 13, opacity: 0.85, background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+              로그아웃
+            </button>
+          </div>
         </div>
 
         <div style={{ maxWidth: 448, margin: "0 auto", padding: "16px 16px 32px", display: "flex", flexDirection: "column", gap: 12 }}>
