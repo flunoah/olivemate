@@ -63,8 +63,8 @@ function dDayLabel(expiredAt: string | null): string {
   return `${m}월 ${d}일 소멸 예정 (D-${diff})`;
 }
 
-function CancelModal({ target, onClose, onConfirm, error }: {
-  target: CancelTarget; onClose: () => void; onConfirm: () => void; error: string;
+function CancelModal({ target, onClose, onConfirm, error, loading }: {
+  target: CancelTarget; onClose: () => void; onConfirm: () => void; error: string; loading: boolean;
 }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: "0 24px" }}>
@@ -81,8 +81,8 @@ function CancelModal({ target, onClose, onConfirm, error }: {
             style={{ padding: "12px 0", borderRadius: 8, background: "#f5f5f5", color: "#666", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
             닫기
           </button>
-          <button onClick={onConfirm}
-            style={{ padding: "12px 0", borderRadius: 8, background: "#E53935", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onConfirm} disabled={loading}
+            style={{ padding: "12px 0", borderRadius: 8, background: "#E53935", color: "#fff", border: "none", fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
             취소하기
           </button>
         </div>
@@ -247,6 +247,7 @@ export default function HistoryPage() {
           onClose={() => { setCancelTarget(null); setCancelError(""); }}
           onConfirm={handleCancelLedger}
           error={cancelError}
+          loading={cancelLoading}
         />
       )}
 
