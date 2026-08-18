@@ -22,10 +22,16 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
 }
 
 export async function subscribeToPush(): Promise<boolean> {
-  if (!isPushSupported()) return false;
+  if (!isPushSupported()) {
+    console.warn("[push] subscribe 중단: 이 브라우저는 Web Push를 지원하지 않음");
+    return false;
+  }
 
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") return false;
+  if (permission !== "granted") {
+    console.warn("[push] subscribe 중단: 알림 권한이 허용되지 않음 (permission=%s)", permission);
+    return false;
+  }
 
   try {
     const registration = await navigator.serviceWorker.register("/service-worker.js");
@@ -34,7 +40,10 @@ export async function subscribeToPush(): Promise<boolean> {
     const keyRes = await authFetch("/api/v1/push/vapid-public-key", {
       headers: { "X-Admin-Key": adminKey },
     });
-    if (!keyRes.ok) return false;
+    if (!keyRes.ok) {
+      console.error("[push] subscribe 실패: VAPID 공개키 조회 실패 (status=%s)", keyRes.status);
+      return false;
+    }
     const keyJson = await keyRes.json();
     const publicKey: string = keyJson.data ?? keyJson;
 
@@ -57,8 +66,12 @@ export async function subscribeToPush(): Promise<boolean> {
       }),
     });
 
+    if (!subRes.ok) {
+      console.error("[push] subscribe 실패: 백엔드 구독 저장 실패 (status=%s)", subRes.status);
+    }
     return subRes.ok;
-  } catch {
+  } catch (e) {
+    console.error("[push] subscribe 실패: 예외 발생", e);
     return false;
   }
 }
@@ -76,8 +89,12 @@ export async function unsubscribeFromPush(): Promise<boolean> {
       method: "DELETE",
       headers: { "X-Admin-Key": adminKey },
     });
+    if (!res.ok) {
+      console.error("[push] unsubscribe 실패: 백엔드 구독 삭제 실패 (status=%s)", res.status);
+    }
     return res.ok;
-  } catch {
+  } catch (e) {
+    console.error("[push] unsubscribe 실패: 예외 발생", e);
     return false;
   }
 }

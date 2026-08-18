@@ -42,6 +42,7 @@ export default function MyPage() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [pushSupported, setPushSupported] = useState(true);
+  const [pushError, setPushError] = useState("");
 
   const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
 
@@ -137,13 +138,16 @@ export default function MyPage() {
 
   const handleTogglePush = async () => {
     setPushLoading(true);
+    setPushError("");
     try {
       if (pushEnabled) {
         const ok = await unsubscribeFromPush();
         if (ok) setPushEnabled(false);
+        else setPushError("알림 끄기에 실패했어요. 잠시 후 다시 시도해주세요.");
       } else {
         const ok = await subscribeToPush();
         setPushEnabled(ok);
+        if (!ok) setPushError("알림 켜기에 실패했어요. 브라우저 알림 권한을 확인하거나 잠시 후 다시 시도해주세요.");
       }
     } finally {
       setPushLoading(false);
@@ -346,25 +350,30 @@ export default function MyPage() {
 
         {/* 포인트 알림 (Web Push) */}
         {pushSupported && (
-          <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>🔔 포인트 알림</p>
-              <p style={{ fontSize: 12, color: "#888", margin: "3px 0 0" }}>
-                {pushEnabled ? "적립·소멸 알림을 받고 있어요" : "적립·소멸 알림을 받아보세요"}
-              </p>
+          <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>🔔 포인트 알림</p>
+                <p style={{ fontSize: 12, color: "#888", margin: "3px 0 0" }}>
+                  {pushEnabled ? "적립·소멸 알림을 받고 있어요" : "적립·소멸 알림을 받아보세요"}
+                </p>
+              </div>
+              <button
+                onClick={handleTogglePush}
+                disabled={pushLoading}
+                style={{
+                  padding: "8px 16px", borderRadius: 20, border: "none", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", opacity: pushLoading ? 0.5 : 1,
+                  background: pushEnabled ? "#F0FAF4" : "#1B9E5B",
+                  color: pushEnabled ? "#1B9E5B" : "#fff",
+                }}
+              >
+                {pushLoading ? "처리 중..." : pushEnabled ? "알림 끄기" : "알림 켜기"}
+              </button>
             </div>
-            <button
-              onClick={handleTogglePush}
-              disabled={pushLoading}
-              style={{
-                padding: "8px 16px", borderRadius: 20, border: "none", fontSize: 13, fontWeight: 600,
-                cursor: "pointer", opacity: pushLoading ? 0.5 : 1,
-                background: pushEnabled ? "#F0FAF4" : "#1B9E5B",
-                color: pushEnabled ? "#1B9E5B" : "#fff",
-              }}
-            >
-              {pushLoading ? "처리 중..." : pushEnabled ? "알림 끄기" : "알림 켜기"}
-            </button>
+            {pushError && (
+              <p style={{ fontSize: 11, color: "#E53935", margin: "8px 0 0" }}>{pushError}</p>
+            )}
           </div>
         )}
 
