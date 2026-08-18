@@ -87,8 +87,8 @@ function Toast({ message, type, onClose }: {
   );
 }
 
-function UndoToastBar({ amount, product, countdown, onUndo }: {
-  amount: number; product: string; countdown: number; onUndo: () => void;
+function UndoToastBar({ amount, product, countdown, onUndo, loading }: {
+  amount: number; product: string; countdown: number; onUndo: () => void; loading: boolean;
 }) {
   return (
     <div style={{
@@ -103,8 +103,8 @@ function UndoToastBar({ amount, product, countdown, onUndo }: {
         </p>
         <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", margin: "3px 0 0" }}>취소 가능 {countdown}초</p>
       </div>
-      <button onClick={onUndo}
-        style={{ background: "none", border: "none", color: "#1B9E5B", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: "8px 14px" }}>
+      <button onClick={onUndo} disabled={loading}
+        style={{ background: "none", border: "none", color: "#1B9E5B", fontSize: 13, fontWeight: 700, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1, flexShrink: 0, padding: "8px 14px" }}>
         취소
       </button>
     </div>
@@ -134,6 +134,7 @@ export default function DashboardPage() {
   const [undoCountdown, setUndoCountdown] = useState(10);
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
+  const [undoLoading, setUndoLoading] = useState(false);
   const undoIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
@@ -419,9 +420,10 @@ export default function DashboardPage() {
   };
 
   const handleUndoUse = async () => {
-    if (!pendingUndo) return;
+    if (!pendingUndo || undoLoading) return;
     if (undoIntervalRef.current) clearInterval(undoIntervalRef.current);
     const target = pendingUndo;
+    setUndoLoading(true);
     setPendingUndo(null);
     try {
       const res = await authFetch("/api/v1/points/cancel", {
@@ -436,6 +438,7 @@ export default function DashboardPage() {
         showToast("취소 가능 시간이 지났습니다.", "error");
       }
     } catch { showToast("오류가 발생했습니다.", "error"); }
+    finally { setUndoLoading(false); }
   };
 
   const weekDays = getThisWeekDateStrings(todayStr);
@@ -531,6 +534,7 @@ export default function DashboardPage() {
           product={pendingUndo.product}
           countdown={undoCountdown}
           onUndo={handleUndoUse}
+          loading={undoLoading}
         />
       )}
 
