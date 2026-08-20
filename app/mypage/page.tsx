@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopProgressBar } from "../components/TopProgressBar";
 import { authFetch, clearAuth, isTokenExpired, silentRefresh } from "../lib/auth";
+import { subscribeToPush, unsubscribeFromPush, isPushSupported, getExistingSubscription } from "../lib/push";
 
 // ponytail: 버그 제보 섹션은 기능은 유지하고 노출만 끔 (FR-01). 재노출 시 true로.
 const SHOW_BUG_REPORT = false;
@@ -38,6 +39,10 @@ export default function MyPage() {
   const [bugType, setBugType] = useState("");
   const [bugDesc, setBugDesc] = useState("");
   const [bugSubmitted, setBugSubmitted] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
+  const [pushError, setPushError] = useState("");
 
   const adminKey = process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin-key';
 
@@ -83,6 +88,14 @@ export default function MyPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!isPushSupported()) {
+      setPushSupported(false);
+      return;
+    }
+    getExistingSubscription().then((sub) => setPushEnabled(!!sub));
+  }, []);
+
   const toggleDay = (day: number) =>
     setSelectedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
 
@@ -121,6 +134,24 @@ export default function MyPage() {
       }
     } catch { setMessage("서버 연결에 실패했습니다."); setMessageType("error"); setConfirmStep(false); }
     finally { setLoading(false); }
+  };
+
+  const handleTogglePush = async () => {
+    setPushLoading(true);
+    setPushError("");
+    try {
+      if (pushEnabled) {
+        const ok = await unsubscribeFromPush();
+        if (ok) setPushEnabled(false);
+        else setPushError("알림 끄기에 실패했어요. 잠시 후 다시 시도해주세요.");
+      } else {
+        const ok = await subscribeToPush();
+        setPushEnabled(ok);
+        if (!ok) setPushError("알림 켜기에 실패했어요. 브라우저 알림 권한을 확인하거나 잠시 후 다시 시도해주세요.");
+      }
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   const sortedDays = (days: number[]) =>
@@ -317,12 +348,43 @@ export default function MyPage() {
           로그아웃
         </button>
 
+        {/* 포인트 알림 (Web Push) */}
+        {pushSupported && (
+          <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>🔔 포인트 알림</p>
+                <p style={{ fontSize: 12, color: "#888", margin: "3px 0 0" }}>
+                  {pushEnabled ? "적립·소멸 알림을 받고 있어요" : "적립·소멸 알림을 받아보세요"}
+                </p>
+              </div>
+              <button
+                onClick={handleTogglePush}
+                disabled={pushLoading}
+                style={{
+                  padding: "8px 16px", borderRadius: 20, border: "none", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", opacity: pushLoading ? 0.5 : 1,
+                  background: pushEnabled ? "#F0FAF4" : "#1B9E5B",
+                  color: pushEnabled ? "#1B9E5B" : "#fff",
+                }}
+              >
+                {pushLoading ? "처리 중..." : pushEnabled ? "알림 끄기" : "알림 켜기"}
+              </button>
+            </div>
+            {pushError && (
+              <p style={{ fontSize: 11, color: "#E53935", margin: "8px 0 0" }}>{pushError}</p>
+            )}
+          </div>
+        )}
+
         {/* 팁박스 (FR-02) */}
         <div style={{ background: "#FFF8E1", borderRadius: 10, border: "0.5px solid #FFE7A0", padding: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#8a6d1a", marginBottom: 8 }}>💡 사용 전 확인해주세요</p>
           <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
             <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>포인트는 익일 오전 1시에 적립돼요.</li>
-            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>근무 스케줄 변경은 가급적 적용되는 해당 주의 월요일에 입력해주세요.</li>
+
+            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>소정 근무일 변경 시 적용 시작일의 주 월요일에 입력해주세요.</li>
+
             <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>
               자소 추가, 삭제 기타 오류가 발생하면{" "}
               <a href="https://open.kakao.com/o/gMhCNOFi" target="_blank" rel="noopener noreferrer" style={{ color: "#1B9E5B", fontWeight: 600, textDecoration: "underline" }}>

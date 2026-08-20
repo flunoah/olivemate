@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/:path*",
-        destination: "https://olivemate-api.onrender.com/api/:path*",
+        source: "/api/v1/:path*",
+        destination: "https://olivemate-api.onrender.com/api/v1/:path*",
       },
     ];
   },
