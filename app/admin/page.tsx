@@ -383,7 +383,7 @@ export default function AdminPage() {
               </button>
             )}
             <div style={{ fontSize: 17, fontWeight: 700 }}>
-              {isMobile && selected ? selected.name : "🫒 MATE Admin"}
+              {isMobile && selected ? selected.name : "🫒 마이자소 Admin"}
             </div>
           </div>
           <button

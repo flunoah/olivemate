@@ -76,8 +76,8 @@ export default function LoginPage() {
 
         {/* 로고 */}
         <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-green-600">🫒 MATE</div>
-          <p className="text-gray-400 text-sm mt-1">올리브영 자소 포인트</p>
+          <div className="text-3xl font-bold text-green-600">🫒 마이자소</div>
+          <p className="text-gray-400 text-sm mt-1">마이자소로 자소 조회하자!</p>
         </div>
 
         {/* 입력 폼 */}

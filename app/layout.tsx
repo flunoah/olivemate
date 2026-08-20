@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MATE",
-  description: "올리브영 자소 포인트",
+  title: "마이자소",
+  description: "올리브영 자소",
 };
 
 export default function RootLayout({
@@ -37,7 +37,7 @@ export default function RootLayout({
           </a>
           <a href="/mypage" className="flex-1 flex flex-col items-center py-3 text-gray-400 hover:text-green-600 transition">
             <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-            <span className="text-xs mt-0.5">마이페이지</span>
+            <span className="text-xs mt-0.5">내 주소정</span>
           </a>
         </nav>
       </body>

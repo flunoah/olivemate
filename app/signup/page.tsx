@@ -139,7 +139,7 @@ export default function SignUpPage() {
       <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm">
 
         <div className="text-center mb-6">
-          <div className="text-3xl font-bold text-green-600">🫒 MATE</div>
+          <div className="text-3xl font-bold text-green-600">🫒 마이자소</div>
           <p className="text-gray-400 text-sm mt-1">{stepTitles[step - 1]}</p>
         </div>
 
@@ -187,10 +187,10 @@ export default function SignUpPage() {
           <div className="space-y-4">
             <div className="bg-green-50 rounded-xl p-4 text-sm text-green-700">
               <p className="font-medium mb-1">기존에 보유한 자소가 있나요?</p>
-              <p className="text-xs text-green-600">중도 입사자의 경우 현재 보유한 자소 포인트를 입력해주세요.</p>
+              <p className="text-xs text-green-600">중도 입사자의 경우 현재 보유한 자소를 입력해주세요.</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">보유 자소 포인트</label>
+              <label className="text-sm font-medium text-gray-600">보유 자소</label>
               <div className="relative mt-1">
                 <input type="number" value={initPoint}
                   onChange={e => setInitPoint(e.target.value)}
