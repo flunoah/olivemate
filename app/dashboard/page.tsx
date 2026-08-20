@@ -537,7 +537,7 @@ export default function DashboardPage() {
       <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
         {/* 헤더 */}
         <div style={{ background: "#1B9E5B", color: "#fff", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>🫒 MATE 포인트</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>🫒 마이자소</div>
           <button onClick={() => { localStorage.clear(); document.cookie = "token=; path=/; max-age=0"; router.push("/"); }}
             style={{ fontSize: 13, opacity: 0.85, background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
             로그아웃

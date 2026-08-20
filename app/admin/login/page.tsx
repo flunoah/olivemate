@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-green-600">🫒 MATE</div>
+          <div className="text-3xl font-bold text-green-600">🫒 마이자소</div>
           <p className="text-gray-400 text-sm mt-1">어드민</p>
         </div>
         <div className="space-y-4">

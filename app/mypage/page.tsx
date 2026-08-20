@@ -145,7 +145,7 @@ export default function MyPage() {
           </div>
           <div>
             <p style={{ fontSize: 16, fontWeight: 600, color: "#1a1a1a", margin: 0 }}>{name}</p>
-            <p style={{ fontSize: 12, color: "#888", margin: "3px 0 0" }}>올리브영 MATE · 크루</p>
+            <p style={{ fontSize: 12, color: "#888", margin: "3px 0 0" }}>올리브영 마이자소 · 크루</p>
           </div>
         </div>
 
@@ -291,7 +291,7 @@ export default function MyPage() {
               <button
                 onClick={async () => {
                   if (!bugDesc.trim()) return;
-                  const subject = encodeURIComponent(`[MATE 버그 제보] ${bugType || "기타"}`);
+                  const subject = encodeURIComponent(`[마이자소 버그 제보] ${bugType || "기타"}`);
                   const mailBody = encodeURIComponent(`크루: ${name}\n유형: ${bugType || "기타"}\n\n내용:\n${bugDesc}`);
                   window.open(`mailto:dragonusuny@naver.com?subject=${subject}&body=${mailBody}`);
                   await fetch("/api/bugs", {
@@ -319,16 +319,16 @@ export default function MyPage() {
 
         {/* 팁박스 (FR-02) */}
         <div style={{ background: "#FFF8E1", borderRadius: 10, border: "0.5px solid #FFE7A0", padding: 16 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#8a6d1a", marginBottom: 8 }}>💡 알아두세요</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#8a6d1a", marginBottom: 8 }}>💡 사용 전 확인해주세요</p>
           <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
-            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>포인트는 익일 오전 1시에 적립되니 놀라지 마세요.</li>
+            <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>포인트는 익일 오전 1시에 적립돼요.</li>
             <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>근무 스케줄 변경은 가급적 적용되는 해당 주의 월요일에 입력해주세요.</li>
             <li style={{ fontSize: 12, color: "#8a6d1a", lineHeight: 1.5 }}>
-              오류가 발생하면{" "}
+              자소 추가, 삭제 기타 오류가 발생하면{" "}
               <a href="https://open.kakao.com/o/gMhCNOFi" target="_blank" rel="noopener noreferrer" style={{ color: "#1B9E5B", fontWeight: 600, textDecoration: "underline" }}>
                 오픈채팅방
               </a>
-              으로 연락주세요.
+              에 남겨주세요.
             </li>
           </ul>
         </div>
