@@ -16,6 +16,7 @@ interface Ledger {
   description?: string;
   productName?: string;
   memo?: string;
+  brand?: string;
 }
 
 interface CancelTarget {
@@ -218,6 +219,18 @@ export default function HistoryPage() {
   const totalUsed = thisMonthLedgers.filter(l => l.ledgerType === "USE").reduce((s, l) => s + l.amount, 0);
   const totalExpiring = Object.values(expiringByDate).reduce((s, v) => s + v, 0);
 
+  const brandSpending = Object.entries(
+    thisMonthLedgers
+      .filter(l => l.ledgerType === "USE" && l.brand)
+      .reduce((acc, l) => {
+        acc[l.brand!] = (acc[l.brand!] || 0) + l.amount;
+        return acc;
+      }, {} as Record<string, number>)
+  )
+    .map(([brand, amount]) => ({ brand, amount }))
+    .sort((a, b) => b.amount - a.amount);
+  const maxBrandAmount = brandSpending[0]?.amount || 1;
+
   const nextExpiry = Object.entries(expiringByDate)
     .filter(([d]) => d >= todayStr)
     .sort(([a], [b]) => a.localeCompare(b))[0];
@@ -275,6 +288,31 @@ export default function HistoryPage() {
               </div>
             </div>
           </div>
+
+          {/* 이번 달 브랜드별 소비 */}
+          {brandSpending.length > 0 && (
+            <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", marginBottom: 10 }}>이번 달 브랜드별 소비</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {brandSpending.map(({ brand, amount }) => (
+                  <div key={brand}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#555", marginBottom: 3 }}>
+                      <span>{brand}</span>
+                      <span>{amount.toLocaleString()}P</span>
+                    </div>
+                    <div style={{ background: "#f5f5f5", borderRadius: 4, height: 6, overflow: "hidden" }}>
+                      <div style={{
+                        width: `${Math.max(4, (amount / maxBrandAmount) * 100)}%`,
+                        height: "100%",
+                        background: "#E53935",
+                        borderRadius: 4,
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 소멸 예정 배너 */}
           {nextExpiry && (

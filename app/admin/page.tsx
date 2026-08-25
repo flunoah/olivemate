@@ -73,7 +73,10 @@ export default function AdminPage() {
 
   const [toast, setToast] = useState({ msg: "", type: "success" as "success" | "error" });
   const [isMobile, setIsMobile] = useState(false);
-  const [adminView, setAdminView] = useState<"crews" | "bugs">("crews");
+  const [adminView, setAdminView] = useState<"crews" | "bugs" | "products">("crews");
+  const [productFile, setProductFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ total: number; synced: number; failed: number } | null>(null);
   const [bugs, setBugs] = useState<Bug[]>([]);
   const [bugFilter, setBugFilter] = useState<"all" | "open" | "resolved">("open");
 
@@ -121,6 +124,31 @@ export default function AdminPage() {
       const res = await fetch("/api/bugs");
       if (res.ok) setBugs(await res.json());
     } catch {}
+  };
+
+  const handleProductUpload = async () => {
+    if (!productFile) return;
+    setUploadLoading(true);
+    setUploadResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", productFile);
+      const res = await fetch("/api/v1/admin/products/upload", {
+        method: "POST",
+        headers: ah(),
+        body: formData,
+      });
+      if (res.status === 401) { router.push("/admin/login"); return; }
+      if (!res.ok) { showToast("업로드에 실패했습니다.", "error"); return; }
+      const result = await res.json();
+      setUploadResult(result);
+      setProductFile(null);
+      showToast(`상품 ${result.synced.toLocaleString()}건 동기화 완료`);
+    } catch {
+      showToast("오류가 발생했습니다.", "error");
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   const toggleResolved = async (bug: Bug) => {
@@ -419,6 +447,11 @@ export default function AdminPage() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => { setAdminView(v => v === "products" ? "crews" : "products"); setSelected(null); }}
+                style={{ width: "100%", padding: "9px 0", borderRadius: 8, background: adminView === "products" ? "#333" : "#f0f0f0", color: adminView === "products" ? "#fff" : "#555", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 10 }}>
+                📦 상품 업로드
+              </button>
               <input
                 type="text"
                 value={search}
@@ -449,8 +482,43 @@ export default function AdminPage() {
           )}
 
           {/* Content — 모바일에서 크루 미선택 시 숨김 */}
-          {(!isMobile || selected || adminView === "bugs") && (
+          {(!isMobile || selected || adminView === "bugs" || adminView === "products") && (
           <div style={{ flex: 1, overflow: "auto", padding: isMobile ? 12 : 20 }}>
+
+            {/* ── 상품 카탈로그 엑셀 업로드 뷰 ── */}
+            {adminView === "products" && (
+              <div style={{ maxWidth: isMobile ? "100%" : 480 }}>
+                <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", margin: "0 0 14px" }}>📦 상품 카탈로그 업로드</p>
+                <div style={{ background: "#fff", borderRadius: 10, border: "0.5px solid #e0e0e0", padding: "16px 18px" }}>
+                  <p style={{ fontSize: 13, color: "#888", margin: "0 0 12px" }}>
+                    엑셀 컬럼 순서: 상품코드 / 브랜드 / 상품명 / 정상가 / 판매가 (1행은 헤더). 상품코드 기준으로 기존 상품은 갱신되고, 엑셀에 없는 기존 상품은 그대로 유지됩니다.
+                  </p>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={e => { setProductFile(e.target.files?.[0] ?? null); setUploadResult(null); }}
+                    style={{ fontSize: 13, marginBottom: 14 }}
+                  />
+                  <button
+                    onClick={handleProductUpload}
+                    disabled={!productFile || uploadLoading}
+                    style={{
+                      display: "block", padding: "10px 0", width: "100%", borderRadius: 8,
+                      background: "#1B9E5B", color: "#fff", border: "none", fontSize: 14, fontWeight: 600,
+                      cursor: !productFile || uploadLoading ? "default" : "pointer",
+                      opacity: !productFile || uploadLoading ? 0.5 : 1,
+                    }}>
+                    {uploadLoading ? "업로드 중..." : "업로드"}
+                  </button>
+                  {uploadResult && (
+                    <p style={{ fontSize: 13, color: "#1B9E5B", marginTop: 12, marginBottom: 0 }}>
+                      총 {uploadResult.total.toLocaleString()}건 중 {uploadResult.synced.toLocaleString()}건 동기화 완료
+                      {uploadResult.failed > 0 && ` (실패 ${uploadResult.failed}건)`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* ── 버그 제보 뷰 ── */}
             {adminView === "bugs" && (

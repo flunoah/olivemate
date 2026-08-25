@@ -249,6 +249,16 @@ export default function DashboardPage() {
   const [useAmount, setUseAmount] = useState("");
   const [productName, setProductName] = useState("");
   const [useDate, setUseDate] = useState("");
+  const [productSuggestions, setProductSuggestions] = useState<
+    { id: string; brand: string; name: string; salePrice: number }[]
+  >([]);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [showProductSuggestions, setShowProductSuggestions] =
+    useState(false);
+  const productSearchTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const productBoxRef = useRef<HTMLDivElement>(null);
 
   const [pointError, setPointError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -506,6 +516,68 @@ export default function DashboardPage() {
       }
     };
   }, [pendingUndo?.ledgerId]);
+
+  // 제품명 자동완성 (디바운스)
+  useEffect(() => {
+    if (productSearchTimerRef.current) {
+      clearTimeout(productSearchTimerRef.current);
+    }
+
+    const keyword = productName.trim();
+    if (keyword.length < 2) {
+      setProductSuggestions([]);
+      return;
+    }
+
+    productSearchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await authFetch(
+          `/api/v1/products/search?q=${encodeURIComponent(keyword)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data?.data ?? data;
+        setProductSuggestions(Array.isArray(list) ? list : []);
+        setShowProductSuggestions(true);
+      } catch {
+        // 자동완성은 보조 기능이므로 실패 시 조용히 무시
+      }
+    }, 300);
+
+    return () => {
+      if (productSearchTimerRef.current) {
+        clearTimeout(productSearchTimerRef.current);
+      }
+    };
+  }, [productName]);
+
+  // 자동완성 드롭다운 바깥 클릭 시 닫기
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        productBoxRef.current &&
+        !productBoxRef.current.contains(e.target as Node)
+      ) {
+        setShowProductSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectProduct = (item: {
+    id: string;
+    brand: string;
+    name: string;
+    salePrice: number;
+  }) => {
+    setProductName(item.name);
+    setUseAmount(String(item.salePrice));
+    setSelectedBrand(item.brand);
+    setPointError("");
+    setShowProductSuggestions(false);
+  };
 
   // 디버그
   useEffect(() => {
@@ -792,6 +864,7 @@ export default function DashboardPage() {
               productName || null,
             usedAt:
               useDate || todayStr,
+            brand: selectedBrand,
           }),
         }
       );
@@ -834,6 +907,7 @@ export default function DashboardPage() {
 
       setUseAmount("");
       setProductName("");
+      setSelectedBrand(null);
       setUseDate(todayStr);
 
       await refresh();
@@ -2175,28 +2249,114 @@ export default function DashboardPage() {
                 }}
               />
 
-              <input
-                type="text"
-                value={productName}
-                onChange={(e) =>
-                  setProductName(
-                    e.target.value
-                  )
-                }
-                placeholder="제품명 입력 (예: 닥터자르트 시카페어 크림)"
-                style={{
-                  border:
-                    "0.5px solid #e0e0e0",
-                  borderRadius: 8,
-                  padding:
-                    "10px 12px",
-                  fontSize: 14,
-                  outline: "none",
-                  width: "100%",
-                  boxSizing:
-                    "border-box",
-                }}
-              />
+              <div
+                ref={productBoxRef}
+                style={{ position: "relative" }}
+              >
+                <input
+                  type="text"
+                  value={productName}
+                  onChange={(e) => {
+                    setProductName(
+                      e.target.value
+                    );
+                    setSelectedBrand(null);
+                    setShowProductSuggestions(
+                      true
+                    );
+                  }}
+                  onFocus={() =>
+                    setShowProductSuggestions(
+                      true
+                    )
+                  }
+                  placeholder="제품명 입력 (예: 닥터자르트 시카페어 크림)"
+                  style={{
+                    border:
+                      "0.5px solid #e0e0e0",
+                    borderRadius: 8,
+                    padding:
+                      "10px 12px",
+                    fontSize: 14,
+                    outline: "none",
+                    width: "100%",
+                    boxSizing:
+                      "border-box",
+                  }}
+                />
+
+                {showProductSuggestions &&
+                  productSuggestions.length >
+                    0 && (
+                    <div
+                      style={{
+                        position:
+                          "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        marginTop: 4,
+                        background:
+                          "#fff",
+                        border:
+                          "0.5px solid #e0e0e0",
+                        borderRadius: 8,
+                        boxShadow:
+                          "0 4px 12px rgba(0,0,0,0.08)",
+                        maxHeight: 220,
+                        overflowY:
+                          "auto",
+                        zIndex: 10,
+                      }}
+                    >
+                      {productSuggestions.map(
+                        (item) => (
+                          <div
+                            key={
+                              item.id
+                            }
+                            onClick={() =>
+                              selectProduct(
+                                item
+                              )
+                            }
+                            style={{
+                              padding:
+                                "10px 12px",
+                              fontSize: 14,
+                              cursor:
+                                "pointer",
+                              display:
+                                "flex",
+                              justifyContent:
+                                "space-between",
+                              gap: 8,
+                              borderBottom:
+                                "0.5px solid #f0f0f0",
+                            }}
+                          >
+                            <span>
+                              {item.brand
+                                ? `${item.brand} · ${item.name}`
+                                : item.name}
+                            </span>
+                            <span
+                              style={{
+                                color:
+                                  "#888",
+                                whiteSpace:
+                                  "nowrap",
+                              }}
+                            >
+                              {item.salePrice.toLocaleString()}
+                              P
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+              </div>
 
               {pointError && (
                 <p
