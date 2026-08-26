@@ -2,11 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   generateBuildId: async () => `build-${Date.now()}`,
-  async rewrites() {
+  async redirects() {
     return [
       {
-        source: "/api/v1/:path*",
-        destination: "https://olivemate-api.onrender.com/api/v1/:path*",
+        source: "/:path*",
+        destination: "https://olivemate-api.onrender.com/:path*",
+        permanent: false,
       },
     ];
   },
