@@ -49,7 +49,7 @@ export default function SignUpPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("https://olivemate-api.onrender.com/api/v1/auth/signup", {
+      const res = await fetch("https://olivemate-api.onrender.com/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginId, password, name }),
