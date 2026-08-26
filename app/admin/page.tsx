@@ -239,7 +239,7 @@ export default function AdminPage() {
     if (!regName || !regLoginId || !regPassword) { setRegError("모든 항목을 입력해주세요."); return; }
     setRegLoading(true); setRegError("");
     try {
-      const res = await fetch("/api/v1/auth/signup", {
+      const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: ah({ "Content-Type": "application/json" }),
         body: JSON.stringify({ loginId: regLoginId, password: regPassword, name: regName }),
